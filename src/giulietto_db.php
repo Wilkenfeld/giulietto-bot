@@ -362,7 +362,7 @@ class GiuliettoDB
      */
     public function getAllUsersForNotification($notification){
         try{
-            $query = "CALL GetAllUserForNotification(?)";
+            $query = "SELECT U.* FROM User U INNER JOIN AccountType A ON U.AccountType = A.Name INNER JOIN Notification N ON A.Notification = N.Name WHERE N.$notification IS TRUE AND U.Enabled IS TRUE;";
             $stmt = $this->_conn->prepare($query);
             $stmt->bind_param("s", $notification);
             $stmt->execute();
