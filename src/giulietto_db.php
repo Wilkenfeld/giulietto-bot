@@ -58,7 +58,7 @@ class GiuliettoDB
      * @param string $type The type of user, it can be private, group, supergroup or channel
      * @param string $accountType The type of account
      * 
-     * @return true|int Return true or sql error code on failure
+     * @return true|false Return true or false on failure
      */
     public function insertUser($chatID, $fullName, $username, $room, $type, $accountType, $language){
         try{
@@ -1045,9 +1045,39 @@ class GiuliettoDB
      */
     public function getSeatsNum($date){
         try{
-            $query = "CALL GetSeatsNum(?);";
+            $query = "       
+                SELECT  NumUtenti.numUtenti, PostiTotali.postiTotali, NumAssenti.numAssenti, NumOspiti.numOspiti, PostiTotali.postiTotali - NumUtenti.numUtenti + NumAssenti.numAssenti - NumOspiti.numOspiti AS FreeSeats
+                FROM (
+                    
+                    SELECT SUM(R.Beds) AS postiTotali
+                    FROM Room R
+                    WHERE 1
+                
+                ) AS PostiTotali INNER JOIN (
+                
+                    SELECT COUNT(*) AS numUtenti
+                    FROM User U INNER JOIN 
+                         AccountType AT ON U.AccountType = AT.Name INNER JOIN
+                         Permission P ON AT.Permission = P.Name
+                    WHERE U.Enabled IS TRUE AND 
+                          P.IsOccupant IS TRUE
+                
+                ) AS NumUtenti INNER JOIN (
+                
+                    SELECT COUNT(*) AS numOspiti
+                    FROM Guest G
+                    WHERE ? BETWEEN G.CheckInDate AND G.LeavingDate 
+                
+                ) AS NumOspiti INNER JOIN (
+                
+                    SELECT COUNT(*) AS numAssenti
+                    FROM Absence A
+                    WHERE ? BETWEEN A.LeavingDate AND A.ReturnDate
+                
+                ) AS NumAssenti;
+            ";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('s',$date);
+            $stmt->bind_param('ss',$date, $date);
             $stmt->execute();
 
             $result = $stmt->get_result();
