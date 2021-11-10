@@ -400,7 +400,7 @@ class GiuliettoDB
     /**
      * Get the name of the account type given the password
      *
-     * @param string $password The password of the account
+     * @param string $password The encrypted password of the account
      *
      * @return string|false the name of the account type or false on failure
      */
@@ -409,7 +409,7 @@ class GiuliettoDB
 
             $query = "  SELECT Name AS AccountType
                         FROM AccountType
-                        WHERE Password = PASSWORD(?);
+                        WHERE Password = ?;
                     ";
             $stmt = $this->_conn->prepare($query);
             $stmt->bind_param('s',$password);
