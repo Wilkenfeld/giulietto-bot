@@ -841,13 +841,11 @@
 
         }
         elseif($update["chat"]["type"] === "private"){
-            preg_match('/^(pw|Pw|PW|pW)(\s*-\s*)(\w+)$/',$update["text"],$words);
-            //Recupera account type da password
-            $accountType = $db->getAccountType($words[3]);
 
-            $bot->sendMessage($accountType);
+            if(preg_match('/^(pw|Pw|PW|pW)(\s*-\s*)(\w+)$/',$update["text"],$words)){
+                //Recupera account type da password
+                $accountType = $db->getAccountType(password_hash($words[3], PASSWORD_DEFAULT));
 
-            if(!is_null($accountType) and $accountType !== false and strcasecmp($words[1],'pw') == 0 ){
                 if(!is_null($user)){
                     if($user['AccountType'] == $accountType){
                         $bot->sendMessage(_('Sei gia registrato'));
@@ -891,8 +889,9 @@
                     }
                 }
             }
-            elseif(is_null($accountType)){
+            else{
                 if(!is_null($user)){
+
                     //Se lo username dell'utente è cambiato viene aggiornato nel database
                     if($user['Username'] != $update['chat']['username']){
                         $db->updateUsername($chatID,$update['chat']['username']);
@@ -1439,7 +1438,7 @@
                             }
                             else{
 
-                               sendUserList($db->getUserList(false));
+                                sendUserList($db->getUserList(false));
 
                                 $usersName = [];
                                 while($row = $users->fetch_assoc()){
@@ -2663,9 +2662,6 @@
                 else{
                     $bot->sendMessage(_("Effettua l'accesso per poter utilizzare il bot, per accedere invia un messaggio in questo formato: pw-password, dove password è la password che ti è stata fornita per l'accesso"));
                 }
-            }
-            else{
-                $bot->sendMessage(_("Si è verificato un errore, il bot è momentaneamente fuori servizio."));
             }
         }
     }
