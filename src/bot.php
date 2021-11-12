@@ -844,7 +844,7 @@
 
             if(preg_match('/^(pw|Pw|PW|pW)(\s*-\s*)(\w+)$/',$update["text"],$words)){
                 //Recupera account type da password
-                $accountType = $db->getAccountType(password_hash($words[3], PASSWORD_DEFAULT));
+                $accountType = $db->getAccountType($words[3]);
 
                 if(!is_null($user)){
                     if($user['AccountType'] == $accountType){
