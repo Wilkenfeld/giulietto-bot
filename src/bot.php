@@ -841,12 +841,17 @@
 
         }
         elseif($update["chat"]["type"] === "private"){
-
-            if(preg_match('/^(pw|Pw|PW|pW)(\s*-\s*)(\w+)$/',$update["text"],$words)){
+            //Login
+            if(preg_match('/^(pw|Pw|PW|pW)(\s+)(\w+)$/',$update["text"],$words)){
                 //Recupera account type da password
                 $accountType = $db->getAccountType($words[3]);
 
-                if(!is_null($user)){
+                if(empty($accountType)){
+                    $bot->sendMessage(_('Non esiste nessun account associato a questa password'));
+                    exit;
+                }
+
+                if(!empty($user)){
                     if($user['AccountType'] == $accountType){
                         $bot->sendMessage(_('Sei gia registrato'));
                     }
@@ -890,1777 +895,1713 @@
                 }
             }
             else{
-                if(!is_null($user)){
 
-                    //Se lo username dell'utente è cambiato viene aggiornato nel database
-                    if($user['Username'] != $update['chat']['username']){
-                        $db->updateUsername($chatID,$update['chat']['username']);
+                if(empty($user)){
+                    $bot->sendMessage(_("Effettua l'accesso per poter utilizzare il bot, per accedere invia un messaggio in questo formato: \"pw password\", dove password è la password che ti è stata fornita per l'accesso"));
+                    exit;
+                }
+
+                //Se lo username dell'utente è cambiato viene aggiornato nel database
+                if($user['Username'] != $update['chat']['username']){
+                    $db->updateUsername($chatID,$update['chat']['username']);
+                }
+
+                if(!$user['Enabled']){
+                    $bot->sendMessage(_("Il tuo account è stato disabilitato, non ti sarà possibile utilizzare il bot fino a quando non verrà riattivato."));
+                    exit;
+                }
+
+                $keyOfText = array_search($update["text"],MAIN_KEYBOARD_TEXT);
+
+                if($update["reply_to_message"]["text"] == _("Invia il file con le nuove linee guida:")){
+
+                    if($permission["NewGuideLine"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+                    if(downloadDocument(FILES_PATH,$update["document"]["file_id"],"Linee_guida")){
+                        $bot->sendReplyKeyboard(_("Nuove linee guida caricate"), $keyboard);
+                    }
+                    else
+                    {
+                        $bot->sendReplyKeyboard(_("Si è verificato un errore nel salvataggio del file"), $keyboard);
                     }
 
-                    if($user['Enabled']){
-                        $keyOfText = array_search($update["text"],MAIN_KEYBOARD_TEXT);
+                }
+                elseif($update["reply_to_message"]["text"] == _("Invia la tua nuova email:")){
 
-                        if($update["reply_to_message"]["text"] == _("Invia il file con le nuove linee guida:")){
+                    if($permission["ChangeEmail"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
 
-                            if($permission["NewGuideLine"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-                            if(downloadDocument(FILES_PATH,$update["document"]["file_id"],"Linee_guida")){
-                                $bot->sendReplyKeyboard(_("Nuove linee guida caricate"), $keyboard);
-                            }
-                            else
-                            {
-                                $bot->sendReplyKeyboard(_("Si è verificato un errore nel salvataggio del file"), $keyboard);
-                            }
+                    if($db->updateEmail($chatID,$update["text"]) === false){
+                        $bot->sendReplyKeyboard(_("Non è stato possibile aggiornare l'e-mail, controlla che sia in un formato valido."), $keyboard);
+                    }
+                    else{
+                        $bot->sendReplyKeyboard(_("E-mail aggiornata, la tua nuova e-mail è: ").$update["text"], $keyboard);
+                    }
+                }
+                elseif($update["reply_to_message"]["text"] == _('Invia il numero di posti della camera:')){
 
+                    if($permission["NewRoom"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $roomsCount = $db->query('SELECT COUNT(*) AS roomsCount FROM Room;');
+                    $roomsCount = $roomsCount->fetch_assoc()['roomsCount'];
+
+                    if($db->createRoom($roomsCount+1, $update['text'])){
+                        $bot->sendReplyKeyboard(_('Camera').' '.($roomsCount+1).' '._('aggiunta'), $keyboard);
+                    }
+                    else{
+                        $bot->sendReplyKeyboard(_('Si è verificato un errore nell\'aggiungere la camera'), $keyboard);
+                    }
+                }
+                elseif($update["reply_to_message"]["text"] == _("Scrivi Nome e Cognome dell'ospite da registrare:")) {
+
+                    if($permission["NewGuest"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $text = $update["text"];
+                    checkNewGuestInput($text, $chatID, $bot, $db, $keyboard);
+                }
+                elseif($update["reply_to_message"]["text"] == _("Scrivi Nome e Cognome dell'ospite da eliminare:")) {
+
+                    if($permission["DeleteGuest"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    //file temporaneo contenente i dati dell'ospite da inserire
+                    $fileName = TmpFileUser_path."TmpEliminaOspite.json";
+                    if($update["text"] == null){
+                        $bot->sendMessage(_("Il nome non può essere vuoto"));
+                        $bot->sendMessageForceReply(_("Scrivi Nome e Cognome dell'ospite da eliminare:"));
+                    }
+                    else{
+                        $file["Nome"] = $update["text"];
+                        file_put_contents($fileName,json_encode($file, JSON_PRETTY_PRINT));
+                        $bot->sendCalendar(time(), _("Usa le frecce per selezionare la prima data dell'assenza che vuoi eliminare"),SELECT_DATE_INTERVALL);
+                    }
+
+                }
+                elseif($update["reply_to_message"]["text"] == _("Scatta una foto del fronte del documento dell'ospite ed inviala:")){
+
+                    if($permission["NewGuest"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    //Prende l'ultimo elemento dell'array associativo che contiene l'immagine alla risoluzione più alta
+                    $text = end($update["photo"]);
+                    checkNewGuestInput($text["file_id"], $chatID, $bot, $db, $keyboard);
+                }
+                elseif($update["reply_to_message"]["text"] == _("Scatta una foto del retro del documento dell'ospite ed inviala:")){
+
+                    if($permission["NewGuest"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    //Prende l'ultimo elemento dell'array associativo che contiene l'immagine alla risoluzione più alta
+                    $text = end($update["photo"]);
+                    checkNewGuestInput($text["file_id"], $chatID, $bot, $db, $keyboard);
+                }
+                elseif($update["reply_to_message"]["text"] == _('Invia il nuovo nome:')){
+                    if($permission["ChangeNameUser"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $_chatID = file_get_contents(TmpFileUser_path.'changeNameUser.json');
+                    $_chatID = json_decode($_chatID, true);
+                    $_chatID = $_chatID['ChatID'];
+                    $_user = $db->getUser($_chatID);
+
+                    if($db->updateName($_chatID,$update['text'])){
+
+                        $users = $db->getUserList(false);
+                        $usersName = [];
+                        while($row = $users->fetch_assoc()){
+                            $usersName[] = $row['FullName'];
                         }
-                        elseif($update["reply_to_message"]["text"] == _("Invia la tua nuova email:")){
+                        $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
 
-                            if($permission["ChangeEmail"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
+                        $oldName = preg_replace('/\s+/','_',$_user['FullName']);
+                        $newName = preg_replace('/\s+/','_',$update['text']);
 
-                            if($db->updateEmail($chatID,$update["text"]) === false){
-                                $bot->sendReplyKeyboard(_("Non è stato possibile aggiornare l'e-mail, controlla che sia in un formato valido."), $keyboard);
+                        rename(TMP_FILE_PATH.$oldName,TMP_FILE_PATH.$newName);
+
+                        rename(LOG_FILE_PATH.$oldName,LOG_FILE_PATH.$newName);
+                        rename(LOG_FILE_PATH.$newName."/$oldName.log",LOG_FILE_PATH.$newName."/$newName.log");
+
+                        $bot->sendReplyKeyboard(_('Nome modificato'), $usersKeyboard);
+
+                        sendUser($db->getUser($_chatID), $permission,  TMP_FILE_PATH.$newName.'/messageInLineKeyboard.json');
+                    }
+                    else{
+                        $users = $db->getUserList(false);
+                        $usersName = [];
+                        while($row = $users->fetch_assoc()){
+                            $usersName[] = $row['FullName'];
+                        }
+                        $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
+                        $bot->sendReplyKeyboard(_("Non è stato possibile cambiare il nome da ").$_user['FullName']._(" a ").$update['text'], $usersKeyboard);
+                    }
+
+                    $file['Type'] = 'SelectUserForEdit';
+                    file_put_contents(TmpFileUser_path.'selectUser.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                    unlink(TmpFileUser_path.'changeNameUser.json');
+                }
+                elseif($update["reply_to_message"]["text"] == _('Eliminando un utente verranno eliminate in automatico anche tutte le sue assenze registrate, i suoi ospiti e verrà rimosso da tutti i gruppi di cui fa parte. Per confermare l\'eliminazione scrivi il seguente codice:')){
+
+                    if($permission["DeleteUser"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $_chatID = file_get_contents(TmpFileUser_path.'deleteUser.json');
+                    $_chatID = json_decode($_chatID, true);
+                    $_chatID = $_chatID['ChatID'];
+                    $_user = $db->getUser($_chatID);
+
+                    $otp = file_get_contents(TmpFileUser_path.'otp.json');
+                    $otp = json_decode($otp, true);
+
+                    if($otp['Type'] == 'DeleteUser') {
+
+                        if ($otp['OTP'] == $update['text']) {
+                            if($db->deleteUser($_chatID)){
+                                $bot->sendReplyKeyboard($_user['FullName']._(' eliminato'), $keyboard);
                             }
                             else{
-                                $bot->sendReplyKeyboard(_("E-mail aggiornata, la tua nuova e-mail è: ").$update["text"], $keyboard);
+                                $bot->sendReplyKeyboard(_("Non è stato possibile eliminare l'utente"), $keyboard);
                             }
                         }
-                        elseif($update["reply_to_message"]["text"] == _('Invia il numero di posti della camera:')){
-
-                            if($permission["NewRoom"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $roomsCount = $db->query('SELECT COUNT(*) AS roomsCount FROM Room;');
-                            $roomsCount = $roomsCount->fetch_assoc()['roomsCount'];
-
-                            if($db->createRoom($roomsCount+1, $update['text'])){
-                                $bot->sendReplyKeyboard(_('Camera').' '.($roomsCount+1).' '._('aggiunta'), $keyboard);
-                            }
-                            else{
-                                $bot->sendReplyKeyboard(_('Si è verificato un errore nell\'aggiungere la camera'), $keyboard);
-                            }
+                        else{
+                            $bot->sendReplyKeyboard(_('Il codice inserito non è valido, l\'utente non verrà eliminato'), $keyboard);
                         }
-                        elseif($update["reply_to_message"]["text"] == _("Scrivi Nome e Cognome dell'ospite da registrare:")) {
 
-                            if($permission["NewGuest"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
+                    }
+
+                    unlink(TmpFileUser_path.'otp.json');
+                    unlink(TmpFileUser_path.'deleteUser.json');
+                }
+                elseif($update["reply_to_message"]["text"] == _('Invia la nuova frequenza del turno:')){
+                    if($permission["EditTypeOfTurn"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    if(filter_var($update["text"], FILTER_VALIDATE_INT) === false or $update['text'] <= 0){
+                        $bot->sendMessage(_('Il numero inserito non è valido, deve essere un numero maggiore di 0'));
+                        $bot->sendMessageForceReply(_('Invia la nuova frequenza del turno:'));
+                        exit;
+                    }
+
+                    $_typeOfTurn = file_get_contents(TmpFileUser_path.'editTypeOfTurn.json');
+                    $_typeOfTurn = json_decode($_typeOfTurn, true);
+                    $_typeOfTurn = $_typeOfTurn['TypeOfTurn'];
+
+                    $typeOfTurnList = $db->getTypeOfTurnList();
+                    $_typeOfTurnList = [];
+                    while($row = $typeOfTurnList->fetch_assoc()){
+                        $_typeOfTurnList[] = $row['Name'];
+                    }
+
+                    if($permission['NewTypeOfTurn']){
+                        $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
+                    }
+                    else{
+                        $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
+                    }
+
+                    if($db->updateTypeOfTurnFrequency($_typeOfTurn,$update['text'])){
+
+                        $bot->sendReplyKeyboard(_('Frequenza cambiata'), $typeOfTurnKeyboard);
+
+                        sendMessageEditTypeOfTurn($db->getTypeOfTurn($_typeOfTurn), $permission, $messageInLineKeyboardPath);
+                    }
+                    else{
+                        $bot->sendReplyKeyboard(_("Non è stato possibile cambiare la frequenza"), $typeOfTurnKeyboard);
+                    }
+
+                    unlink(TmpFileUser_path.'editTypeOfTurn.json');
+                }
+                elseif($update["reply_to_message"]["text"] == _('Invia da quanti utenti deve essere composto il gruppo:')){
+                    if($permission["EditTypeOfTurn"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    if(filter_var($update["text"], FILTER_VALIDATE_INT) === false or $update['text'] <= 0){
+                        $bot->sendMessage(_('Il numero inserito non è valido, deve essere un numero maggiore di 0'));
+                        $bot->sendMessageForceReply(_('Invia da quanti utenti deve essere composto il gruppo:'));
+                        exit;
+                    }
+
+                    $_typeOfTurn = file_get_contents(TmpFileUser_path.'editTypeOfTurn.json');
+                    $_typeOfTurn = json_decode($_typeOfTurn, true);
+                    $_typeOfTurn = $_typeOfTurn['TypeOfTurn'];
+
+                    $typeOfTurnList = $db->getTypeOfTurnList();
+                    $_typeOfTurnList = [];
+                    while($row = $typeOfTurnList->fetch_assoc()){
+                        $_typeOfTurnList[] = $row['Name'];
+                    }
+
+                    if($permission['NewTypeOfTurn']){
+                        $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
+                    }
+                    else{
+                        $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
+                    }
+
+                    if($db->updateUserByGroup($_typeOfTurn,$update['text'])){
+
+                        $bot->sendReplyKeyboard(_('Numero di utenti per gruppo modificato'), $typeOfTurnKeyboard);
+
+                        sendMessageEditTypeOfTurn($db->getTypeOfTurn($_typeOfTurn), $permission, $messageInLineKeyboardPath);
+                    }
+                    else{
+                        $bot->sendReplyKeyboard(_("Non è stato possibile cambiare il numero di utenti per gruppo"), $typeOfTurnKeyboard);
+                    }
+
+                    unlink(TmpFileUser_path.'editTypeOfTurn.json');
+                }
+                elseif($update["reply_to_message"]["text"] == _("Scrivi il nome del nuovo turno da creare:")){
+                    if($permission["NewTypeOfTurn"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $file['Name'] = $update['text'];
+                    file_put_contents(TmpFileUser_path.'tmpNewTurn.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                    $bot->sendMessageForceReply(_("Scrivi ogni quanti giorni deve essere eseguito il turno:"));
+                }
+                elseif($update["reply_to_message"]["text"] == _("Scrivi ogni quanti giorni deve essere eseguito il turno:")){
+                    if($permission["NewTypeOfTurn"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    if(filter_var($update["text"], FILTER_VALIDATE_INT) === false){
+                        $bot->sendMessage(_('Il numero inserito non è valido'));
+                        $bot->sendMessageForceReply(_("Scrivi ogni quanti giorni deve essere eseguito il turno:"));
+                        exit;
+                    }
+
+                    $file = file_get_contents(TmpFileUser_path.'tmpNewTurn.json');
+                    $file = json_decode($file, true);
+                    $file['Frequency'] = $update['text'];
+                    file_put_contents(TmpFileUser_path.'tmpNewTurn.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                    $bot->sendMessageForceReply(_("Scrivi quante volte consecutivamente un gruppo deve eseguire il turno:"));
+                }
+                elseif($update["reply_to_message"]["text"] == _("Scrivi quante volte consecutivamente un gruppo deve eseguire il turno:")){
+                    if($permission["NewTypeOfTurn"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    if(filter_var($update["text"], FILTER_VALIDATE_INT) === false){
+                        $bot->sendMessage(_('Il numero inserito non è valido'));
+                        $bot->sendMessageForceReply(_("Scrivi quante volte consecutivamente un gruppo deve eseguire il turno:"));
+                        exit;
+                    }
+
+                    $file = file_get_contents(TmpFileUser_path.'tmpNewTurn.json');
+                    $file = json_decode($file, true);
+                    $file['GroupFrequency'] = $update['text'];
+                    file_put_contents(TmpFileUser_path.'tmpNewTurn.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                    $bot->sendMessageForceReply(_("Scrivi da quanti utenti deve indicativamente essere composto un gruppo:"));
+                }
+                elseif($update["reply_to_message"]["text"] == _("Scrivi da quanti utenti deve indicativamente essere composto un gruppo:")){
+                    if($permission["NewTypeOfTurn"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    if(filter_var($update["text"], FILTER_VALIDATE_INT) === false){
+                        $bot->sendMessage(_('Il numero inserito non è valido'));
+                        $bot->sendMessageForceReply(_("Scrivi ogni quanti giorni deve essere eseguito il turno:"));
+                        exit;
+                    }
+
+                    $file = file_get_contents(TmpFileUser_path.'tmpNewTurn.json');
+                    $file = json_decode($file, true);
+                    $file['UsersByGroup'] = $update['text'];
+                    file_put_contents(TmpFileUser_path.'tmpNewTurn.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                    $path = TmpFileUser_path."calendar.json";
+                    $type['Type'] = 'NewTurn';
+                    file_put_contents($path,json_encode($type));
+
+                    $bot->sendCalendar(time(), _("Usa le frecce per selezionare la data in cui il turno inizierà ad essere eseguito"));
+                }
+                elseif($update["reply_to_message"]["text"] == _('Scrivi il seguente codice per confermare:')){
+                    if($permission["RearrangeGroups"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $otp = file_get_contents(TmpFileUser_path.'otp.json');
+                    $otp = json_decode($otp, true);
+
+                    if($otp['Type'] == 'RearrangeGroups'){
+
+                        if( $otp['OTP'] == $update['text']){
+
+                            $usersList = $db->query(' SELECT U.ChatID
+                                                        FROM User U INNER JOIN AccountType A_T ON U.AccountType = A_T.Name
+                                                        INNER JOIN Permission P ON A_T.Permission = P.Name
+                                                        LEFT JOIN ( 
+                                                            SELECT * FROM Absence A WHERE A.LeavingDate >= CURRENT_DATE()
+                                                        ) AS D ON U.ChatID = D.User 
+                                                        WHERE D.User IS NULL AND 
+                                                              U.Enabled IS TRUE AND
+                                                              P.PostedInGroup IS TRUE
+                                                        ORDER BY U.Room;');
+                            $users = [];
+                            while($row = $usersList->fetch_assoc()){
+                                $users[$row['ChatID']] = 0;
                             }
 
-                            $text = $update["text"];
-                            checkNewGuestInput($text, $chatID, $bot, $db, $keyboard);
-                        }
-                        elseif($update["reply_to_message"]["text"] == _("Scrivi Nome e Cognome dell'ospite da eliminare:")) {
+                            $db->query('DELETE FROM Execution WHERE 1;');
+                            $db->query('DELETE FROM Member WHERE 1;');
+                            $db->query('DELETE FROM Squad WHERE 1;');
 
-                            if($permission["DeleteGuest"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
+                            $typeOfTurnList = $db->query('SELECT T.UsersBySquad, GROUP_CONCAT(T.Name) AS TypeOfTurns FROM TypeOfTurn T WHERE 1 GROUP BY T.UsersBySquad;');
+                            while($row = $typeOfTurnList->fetch_assoc()){
 
-                            //file temporaneo contenente i dati dell'ospite da inserire
-                            $fileName = TmpFileUser_path."TmpEliminaOspite.json";
-                            if($update["text"] == null){
-                                $bot->sendMessage(_("Il nome non può essere vuoto"));
-                                $bot->sendMessageForceReply(_("Scrivi Nome e Cognome dell'ospite da eliminare:"));
-                            }
-                            else{
-                                $file["Nome"] = $update["text"];
-                                file_put_contents($fileName,json_encode($file, JSON_PRETTY_PRINT));
-                                $bot->sendCalendar(time(), _("Usa le frecce per selezionare la prima data dell'assenza che vuoi eliminare"),SELECT_DATE_INTERVALL);
-                            }
-
-                        }
-                        elseif($update["reply_to_message"]["text"] == _("Scatta una foto del fronte del documento dell'ospite ed inviala:")){
-
-                            if($permission["NewGuest"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            //Prende l'ultimo elemento dell'array associativo che contiene l'immagine alla risoluzione più alta
-                            $text = end($update["photo"]);
-                            checkNewGuestInput($text["file_id"], $chatID, $bot, $db, $keyboard);
-                        }
-                        elseif($update["reply_to_message"]["text"] == _("Scatta una foto del retro del documento dell'ospite ed inviala:")){
-
-                            if($permission["NewGuest"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            //Prende l'ultimo elemento dell'array associativo che contiene l'immagine alla risoluzione più alta
-                            $text = end($update["photo"]);
-                            checkNewGuestInput($text["file_id"], $chatID, $bot, $db, $keyboard);
-                        }
-                        elseif($update["reply_to_message"]["text"] == _('Invia il nuovo nome:')){
-                            if($permission["ChangeNameUser"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $_chatID = file_get_contents(TmpFileUser_path.'changeNameUser.json');
-                            $_chatID = json_decode($_chatID, true);
-                            $_chatID = $_chatID['ChatID'];
-                            $_user = $db->getUser($_chatID);
-
-                            if($db->updateName($_chatID,$update['text'])){
-
-                                $users = $db->getUserList(false);
-                                $usersName = [];
-                                while($row = $users->fetch_assoc()){
-                                    $usersName[] = $row['FullName'];
+                                $typeOfTurn = explode(',', $row['TypeOfTurns']);
+                                //Ordina per ultima esecuzione probabilmente non serve
+                                /*
+                                    foreach(array_keys($users) as $key){
+                                    $lastExecution = 0;
+                                    foreach($typeOfTurn as $t){
+                                        $lastExecution = max([$lastExecution, $db->getLastExecution($db->getUser($key)['FullName'], $t)]);
+                                    }
+                                    $users[$key] = $lastExecution;
                                 }
-                                $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
+                                arsort($users);
 
-                                $oldName = preg_replace('/\s+/','_',$_user['FullName']);
-                                $newName = preg_replace('/\s+/','_',$update['text']);
+                                 */
 
-                                rename(TMP_FILE_PATH.$oldName,TMP_FILE_PATH.$newName);
+                                $userInGroup = 0;
+                                $groupNum = 1;
+                                $numOfGroups = 1;
+                                foreach (array_keys($users) as $key){
 
-                                rename(LOG_FILE_PATH.$oldName,LOG_FILE_PATH.$newName);
-                                rename(LOG_FILE_PATH.$newName."/$oldName.log",LOG_FILE_PATH.$newName."/$newName.log");
+                                    //Controllare se non ci sono abbastanza utenti per fare un gruppo completo
+                                    if( $userInGroup == 0 and (sizeof($users) - array_search($key, array_keys($users)) ) <= ($row['UsersBySquad']*0.5) ){
+                                        if(sizeof($typeOfTurn) > 1){
+                                            $db->insertUserInGroup($key, implode($typeOfTurn).' '.$groupNum);
+                                        }
+                                        else{
+                                            $db->insertUserInGroup($key, "$typeOfTurn[0] $groupNum");
+                                        }
 
-                                $bot->sendReplyKeyboard(_('Nome modificato'), $usersKeyboard);
-
-                                sendUser($db->getUser($_chatID), $permission,  TMP_FILE_PATH.$newName.'/messageInLineKeyboard.json');
-                            }
-                            else{
-                                $users = $db->getUserList(false);
-                                $usersName = [];
-                                while($row = $users->fetch_assoc()){
-                                    $usersName[] = $row['FullName'];
-                                }
-                                $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
-                                $bot->sendReplyKeyboard(_("Non è stato possibile cambiare il nome da ").$_user['FullName']._(" a ").$update['text'], $usersKeyboard);
-                            }
-
-                            $file['Type'] = 'SelectUserForEdit';
-                            file_put_contents(TmpFileUser_path.'selectUser.json', json_encode($file, JSON_PRETTY_PRINT));
-
-                            unlink(TmpFileUser_path.'changeNameUser.json');
-                        }
-                        elseif($update["reply_to_message"]["text"] == _('Eliminando un utente verranno eliminate in automatico anche tutte le sue assenze registrate, i suoi ospiti e verrà rimosso da tutti i gruppi di cui fa parte. Per confermare l\'eliminazione scrivi il seguente codice:')){
-
-                            if($permission["DeleteUser"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $_chatID = file_get_contents(TmpFileUser_path.'deleteUser.json');
-                            $_chatID = json_decode($_chatID, true);
-                            $_chatID = $_chatID['ChatID'];
-                            $_user = $db->getUser($_chatID);
-
-                            $otp = file_get_contents(TmpFileUser_path.'otp.json');
-                            $otp = json_decode($otp, true);
-
-                            if($otp['Type'] == 'DeleteUser') {
-
-                                if ($otp['OTP'] == $update['text']) {
-                                    if($db->deleteUser($_chatID)){
-                                        $bot->sendReplyKeyboard($_user['FullName']._(' eliminato'), $keyboard);
+                                        if($groupNum == $numOfGroups){
+                                            $groupNum = 1;
+                                        }
+                                        else{
+                                            $groupNum++;
+                                        }
                                     }
                                     else{
-                                        $bot->sendReplyKeyboard(_("Non è stato possibile eliminare l'utente"), $keyboard);
-                                    }
-                                }
-                                else{
-                                    $bot->sendReplyKeyboard(_('Il codice inserito non è valido, l\'utente non verrà eliminato'), $keyboard);
-                                }
+                                        if($userInGroup == 0){
 
-                            }
-
-                            unlink(TmpFileUser_path.'otp.json');
-                            unlink(TmpFileUser_path.'deleteUser.json');
-                        }
-                        elseif($update["reply_to_message"]["text"] == _('Invia la nuova frequenza del turno:')){
-                            if($permission["EditTypeOfTurn"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            if(filter_var($update["text"], FILTER_VALIDATE_INT) === false or $update['text'] <= 0){
-                                $bot->sendMessage(_('Il numero inserito non è valido, deve essere un numero maggiore di 0'));
-                                $bot->sendMessageForceReply(_('Invia la nuova frequenza del turno:'));
-                                exit;
-                            }
-
-                            $_typeOfTurn = file_get_contents(TmpFileUser_path.'editTypeOfTurn.json');
-                            $_typeOfTurn = json_decode($_typeOfTurn, true);
-                            $_typeOfTurn = $_typeOfTurn['TypeOfTurn'];
-
-                            $typeOfTurnList = $db->getTypeOfTurnList();
-                            $_typeOfTurnList = [];
-                            while($row = $typeOfTurnList->fetch_assoc()){
-                                $_typeOfTurnList[] = $row['Name'];
-                            }
-
-                            if($permission['NewTypeOfTurn']){
-                                $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
-                            }
-                            else{
-                                $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
-                            }
-
-                            if($db->updateTypeOfTurnFrequency($_typeOfTurn,$update['text'])){
-
-                                $bot->sendReplyKeyboard(_('Frequenza cambiata'), $typeOfTurnKeyboard);
-
-                                sendMessageEditTypeOfTurn($db->getTypeOfTurn($_typeOfTurn), $permission, $messageInLineKeyboardPath);
-                            }
-                            else{
-                                $bot->sendReplyKeyboard(_("Non è stato possibile cambiare la frequenza"), $typeOfTurnKeyboard);
-                            }
-
-                            unlink(TmpFileUser_path.'editTypeOfTurn.json');
-                        }
-                        elseif($update["reply_to_message"]["text"] == _('Invia da quanti utenti deve essere composto il gruppo:')){
-                            if($permission["EditTypeOfTurn"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            if(filter_var($update["text"], FILTER_VALIDATE_INT) === false or $update['text'] <= 0){
-                                $bot->sendMessage(_('Il numero inserito non è valido, deve essere un numero maggiore di 0'));
-                                $bot->sendMessageForceReply(_('Invia da quanti utenti deve essere composto il gruppo:'));
-                                exit;
-                            }
-
-                            $_typeOfTurn = file_get_contents(TmpFileUser_path.'editTypeOfTurn.json');
-                            $_typeOfTurn = json_decode($_typeOfTurn, true);
-                            $_typeOfTurn = $_typeOfTurn['TypeOfTurn'];
-
-                            $typeOfTurnList = $db->getTypeOfTurnList();
-                            $_typeOfTurnList = [];
-                            while($row = $typeOfTurnList->fetch_assoc()){
-                                $_typeOfTurnList[] = $row['Name'];
-                            }
-
-                            if($permission['NewTypeOfTurn']){
-                                $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
-                            }
-                            else{
-                                $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
-                            }
-
-                            if($db->updateUserByGroup($_typeOfTurn,$update['text'])){
-
-                                $bot->sendReplyKeyboard(_('Numero di utenti per gruppo modificato'), $typeOfTurnKeyboard);
-
-                                sendMessageEditTypeOfTurn($db->getTypeOfTurn($_typeOfTurn), $permission, $messageInLineKeyboardPath);
-                            }
-                            else{
-                                $bot->sendReplyKeyboard(_("Non è stato possibile cambiare il numero di utenti per gruppo"), $typeOfTurnKeyboard);
-                            }
-
-                            unlink(TmpFileUser_path.'editTypeOfTurn.json');
-                        }
-                        elseif($update["reply_to_message"]["text"] == _("Scrivi il nome del nuovo turno da creare:")){
-                            if($permission["NewTypeOfTurn"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $file['Name'] = $update['text'];
-                            file_put_contents(TmpFileUser_path.'tmpNewTurn.json', json_encode($file, JSON_PRETTY_PRINT));
-
-                            $bot->sendMessageForceReply(_("Scrivi ogni quanti giorni deve essere eseguito il turno:"));
-                        }
-                        elseif($update["reply_to_message"]["text"] == _("Scrivi ogni quanti giorni deve essere eseguito il turno:")){
-                            if($permission["NewTypeOfTurn"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            if(filter_var($update["text"], FILTER_VALIDATE_INT) === false){
-                                $bot->sendMessage(_('Il numero inserito non è valido'));
-                                $bot->sendMessageForceReply(_("Scrivi ogni quanti giorni deve essere eseguito il turno:"));
-                                exit;
-                            }
-
-                            $file = file_get_contents(TmpFileUser_path.'tmpNewTurn.json');
-                            $file = json_decode($file, true);
-                            $file['Frequency'] = $update['text'];
-                            file_put_contents(TmpFileUser_path.'tmpNewTurn.json', json_encode($file, JSON_PRETTY_PRINT));
-
-                            $bot->sendMessageForceReply(_("Scrivi quante volte consecutivamente un gruppo deve eseguire il turno:"));
-                        }
-                        elseif($update["reply_to_message"]["text"] == _("Scrivi quante volte consecutivamente un gruppo deve eseguire il turno:")){
-                            if($permission["NewTypeOfTurn"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            if(filter_var($update["text"], FILTER_VALIDATE_INT) === false){
-                                $bot->sendMessage(_('Il numero inserito non è valido'));
-                                $bot->sendMessageForceReply(_("Scrivi quante volte consecutivamente un gruppo deve eseguire il turno:"));
-                                exit;
-                            }
-
-                            $file = file_get_contents(TmpFileUser_path.'tmpNewTurn.json');
-                            $file = json_decode($file, true);
-                            $file['GroupFrequency'] = $update['text'];
-                            file_put_contents(TmpFileUser_path.'tmpNewTurn.json', json_encode($file, JSON_PRETTY_PRINT));
-
-                            $bot->sendMessageForceReply(_("Scrivi da quanti utenti deve indicativamente essere composto un gruppo:"));
-                        }
-                        elseif($update["reply_to_message"]["text"] == _("Scrivi da quanti utenti deve indicativamente essere composto un gruppo:")){
-                            if($permission["NewTypeOfTurn"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            if(filter_var($update["text"], FILTER_VALIDATE_INT) === false){
-                                $bot->sendMessage(_('Il numero inserito non è valido'));
-                                $bot->sendMessageForceReply(_("Scrivi ogni quanti giorni deve essere eseguito il turno:"));
-                                exit;
-                            }
-
-                            $file = file_get_contents(TmpFileUser_path.'tmpNewTurn.json');
-                            $file = json_decode($file, true);
-                            $file['UsersByGroup'] = $update['text'];
-                            file_put_contents(TmpFileUser_path.'tmpNewTurn.json', json_encode($file, JSON_PRETTY_PRINT));
-
-                            $path = TmpFileUser_path."calendar.json";
-                            $type['Type'] = 'NewTurn';
-                            file_put_contents($path,json_encode($type));
-
-                            $bot->sendCalendar(time(), _("Usa le frecce per selezionare la data in cui il turno inizierà ad essere eseguito"));
-                        }
-                        elseif($update["reply_to_message"]["text"] == _('Scrivi il seguente codice per confermare:')){
-                            if($permission["RearrangeGroups"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $otp = file_get_contents(TmpFileUser_path.'otp.json');
-                            $otp = json_decode($otp, true);
-
-                            if($otp['Type'] == 'RearrangeGroups'){
-
-                                if( $otp['OTP'] == $update['text']){
-
-                                    $usersList = $db->query(' SELECT U.ChatID
-                                                            FROM User U INNER JOIN AccountType A_T ON U.AccountType = A_T.Name
-                                                            INNER JOIN Permission P ON A_T.Permission = P.Name
-                                                            LEFT JOIN ( 
-                                                                SELECT * FROM Absence A WHERE A.LeavingDate >= CURRENT_DATE()
-                                                            ) AS D ON U.ChatID = D.User 
-                                                            WHERE D.User IS NULL AND 
-                                                                  U.Enabled IS TRUE AND
-                                                                  P.PostedInGroup IS TRUE
-                                                            ORDER BY U.Room;');
-                                    $users = [];
-                                    while($row = $usersList->fetch_assoc()){
-                                        $users[$row['ChatID']] = 0;
-                                    }
-
-                                    $db->query('DELETE FROM Execution WHERE 1;');
-                                    $db->query('DELETE FROM Member WHERE 1;');
-                                    $db->query('DELETE FROM Squad WHERE 1;');
-
-                                    $typeOfTurnList = $db->query('SELECT T.UsersBySquad, GROUP_CONCAT(T.Name) AS TypeOfTurns FROM TypeOfTurn T WHERE 1 GROUP BY T.UsersBySquad;');
-                                    while($row = $typeOfTurnList->fetch_assoc()){
-
-                                        $typeOfTurn = explode(',', $row['TypeOfTurns']);
-                                        //Ordina per ultima esecuzione probabilmente non serve
-                                        /*
-                                            foreach(array_keys($users) as $key){
-                                            $lastExecution = 0;
-                                            foreach($typeOfTurn as $t){
-                                                $lastExecution = max([$lastExecution, $db->getLastExecution($db->getUser($key)['FullName'], $t)]);
+                                            $db->createGroup(implode($typeOfTurn).' '.$numOfGroups);
+                                            $db->insertUserInGroup($key, implode($typeOfTurn).' '.$numOfGroups);
+                                            foreach ($typeOfTurn as $t){
+                                                $typeOfTurnGroupFrequency = $db->getTypeOfTurn($t)['SquadFrequency'];
+                                                for($i = $typeOfTurnGroupFrequency-1; $i>=0; $i-- ){
+                                                    $db->addExecution($t, implode($typeOfTurn).' '.$numOfGroups, ($numOfGroups*$typeOfTurnGroupFrequency)-1-$i);
+                                                }
                                             }
-                                            $users[$key] = $lastExecution;
                                         }
-                                        arsort($users);
-
-                                         */
-
-                                        $userInGroup = 0;
-                                        $groupNum = 1;
-                                        $numOfGroups = 1;
-                                        foreach (array_keys($users) as $key){
-
-                                            //Controllare se non ci sono abbastanza utenti per fare un gruppo completo
-                                            if( $userInGroup == 0 and (sizeof($users) - array_search($key, array_keys($users)) ) <= ($row['UsersBySquad']*0.5) ){
-                                                if(sizeof($typeOfTurn) > 1){
-                                                    $db->insertUserInGroup($key, implode($typeOfTurn).' '.$groupNum);
-                                                }
-                                                else{
-                                                    $db->insertUserInGroup($key, "$typeOfTurn[0] $groupNum");
-                                                }
-
-                                                if($groupNum == $numOfGroups){
-                                                    $groupNum = 1;
-                                                }
-                                                else{
-                                                    $groupNum++;
-                                                }
+                                        else{
+                                            if(sizeof($typeOfTurn) > 1){
+                                                $db->insertUserInGroup($key, implode($typeOfTurn).' '.$numOfGroups);
                                             }
                                             else{
-                                                if($userInGroup == 0){
-
-                                                    $db->createGroup(implode($typeOfTurn).' '.$numOfGroups);
-                                                    $db->insertUserInGroup($key, implode($typeOfTurn).' '.$numOfGroups);
-                                                    foreach ($typeOfTurn as $t){
-                                                        $typeOfTurnGroupFrequency = $db->getTypeOfTurn($t)['SquadFrequency'];
-                                                        for($i = $typeOfTurnGroupFrequency-1; $i>=0; $i-- ){
-                                                            $db->addExecution($t, implode($typeOfTurn).' '.$numOfGroups, ($numOfGroups*$typeOfTurnGroupFrequency)-1-$i);
-                                                        }
-                                                    }
-                                                }
-                                                else{
-                                                    if(sizeof($typeOfTurn) > 1){
-                                                        $db->insertUserInGroup($key, implode($typeOfTurn).' '.$numOfGroups);
-                                                    }
-                                                    else{
-                                                        $db->insertUserInGroup($key, "$typeOfTurn[0] $numOfGroups");
-                                                    }
-                                                }
-
-                                                $userInGroup++;
-
-                                                if($userInGroup == $row['UsersBySquad']){
-                                                    $userInGroup = 0;
-                                                    $numOfGroups++;
-                                                }
+                                                $db->insertUserInGroup($key, "$typeOfTurn[0] $numOfGroups");
                                             }
                                         }
-                                    }
 
-                                    $bot->sendMessage("Ecco i nuovi gruppi");
+                                        $userInGroup++;
 
-                                    $groupList = $db->getGroupList();
-                                    $rowNumber = sizeof($groupList);
-                                    $i=0;
-                                    foreach (array_keys($groupList) as $key){
-                                        $i++;
-                                        $userInGroup = $db->getUserInGroup($key);
-                                        if($i == $rowNumber){
-                                            $bot->sendReplyKeyboard(userInGroup($key,$userInGroup),$keyboard);
-                                        }
-                                        else{
-                                            $bot->sendMessage(userInGroup($key,$userInGroup));
-                                        }
-                                    }
-
-                                    $myChatID = $chatID;
-                                    foreach (array_keys($users) as $key){
-                                        if($key !== $myChatID){
-                                            $bot->setChatID($key);
-                                            $bot->sendMessage( _('Il calendario dei turni ed i gruppi sono stati aggiornati, ora fai parte dei seguenti gruppi:') );
-
-                                            $groups = $db->getGroupsByUser($key);
-
-                                            $msg = '';
-                                            foreach(array_keys($groups) as $group){
-                                                $userInGroup = $db->getUserInGroup($group);
-
-                                                $msg .= "- - - - - - - - - - ".$group." - - - - - - - - - - \n";
-
-                                                foreach($userInGroup as $user){
-
-                                                    $msg .= $user["FullName"];
-
-                                                    if(!empty($user["Username"])){
-                                                        $msg .= " - @".$user["Username"].PHP_EOL;
-                                                    }
-                                                    else{
-                                                        $msg .= PHP_EOL;
-                                                    }
-                                                }
-
-                                                $msg .= PHP_EOL;
-                                            }
-
-                                            $bot->sendMessage($msg);
+                                        if($userInGroup == $row['UsersBySquad']){
+                                            $userInGroup = 0;
+                                            $numOfGroups++;
                                         }
                                     }
                                 }
-                                else{
-                                    $bot->sendMessage(_('Il codice inserito non è valido, i gruppi non verranno riorganizzati'));
-                                }
-
                             }
 
-                            unlink(TmpFileUser_path.'otp.json');
-                        }
-                        elseif($update["text"] == _("Linee guida")." \u{1F4D6}") { //invia il pdf con le linee guida
-                            if(file_exists(FILES_PATH."/Linee_guida.pdf")){
+                            $bot->sendMessage("Ecco i nuovi gruppi");
 
-                                $bot->sendDocument(FILES_PATH.'Linee_guida.pdf');
-
-                            }else{
-                                $bot->sendMessage("Il file delle linee guida non è disponibile");
-                            }
-                        }
-                        elseif($update["text"] == _("Lista assenti")." \u{1F4CB}"){
-
-                            if($permission["AbsenceList"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $path = TmpFileUser_path."calendar.json";
-                            $type['Type'] = 'AbsenceList';
-                            file_put_contents($path,json_encode($type));
-                            $bot->sendCalendar(time(),_("Seleziona il giorno per cui vuoi visualizzare le assenze"),SELECT_DATE_INTERVALL);
-                        }
-                        elseif($update["text"] == _("Lista ospiti")." \u{1F4CB}"){
-
-                            if($permission["GuestList"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $path = TmpFileUser_path."calendar.json";
-                            $type['Type'] = 'GuestList';
-                            file_put_contents($path,json_encode($type));
-                            $bot->sendCalendar(time(),_("Seleziona il giorno per cui vuoi visualizzare gli ospiti"),SELECT_DATE_INTERVALL);
-                        }
-                        elseif($update["text"] == _("Lista utenti")." \u{1F4CB}"){
-
-                            if($permission["UserList"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $users = $db->getUserList(false);
-
-                            if($users === false){
-                                $bot->sendMessage(_("Non è stato possibile recuperare la lista degli utenti"));
-                            }
-                            else{
-
-                                sendUserList($db->getUserList(false));
-
-                                $usersName = [];
-                                while($row = $users->fetch_assoc()){
-                                    $usersName[] = $row['FullName'];
-                                }
-
-                                if($permission['ChangeUserState'] or $permission['DeleteUser'] or $permission['ChangeNameUser'] or $permission['ChangeUserRoom']){
-                                    $file['Type'] = 'SelectUserForEdit';
-
-                                    file_put_contents(TmpFileUser_path.'selectUser.json', json_encode($file, JSON_PRETTY_PRINT));
-
-                                    $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
-                                    $bot->sendReplyKeyboard(_('Seleziona un utente per modificarlo:'), $usersKeyboard);
-                                }
-                            }
-                        }
-                        elseif($update["text"] == _("Lista camere")." \u{1F4CB}"){
-
-                            if($permission["ChangeUserRoom"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $rooms = $db->query('SELECT R.Num, R.Beds AS TotalBeds, COUNT(U.ChatID) AS OccupiedBeds FROM Room R LEFT JOIN User U ON R.Num = U.Room AND U.Enabled IS TRUE GROUP BY R.Num;');
-
-                            $msg = '- - - - - - '._('Lista Camere').' - - - - - -'.PHP_EOL;
-                            $_rooms = [];
-                            while($row = $rooms->fetch_assoc()){
-                                $_rooms[] = $row['Num'];
-                                $msg .= _('Camera ').$row['Num'].': '._('Posti occupati').' '.$row['OccupiedBeds'].'/'.$row['TotalBeds'].PHP_EOL;
-                            }
-
-                            if($permission["NewRoom"]){
-                                $roomsKeyboard = createUserKeyboard($_rooms,[[['text' => _('Aggiungi nuova camera')]], [['text' => "\u{1F3E1}"]]]);
-                            }
-                            else{
-                                $roomsKeyboard = createUserKeyboard($_rooms,[[['text' => "\u{1F3E1}"]]]);
-                            }
-
-                            $file['Type'] = 'SeeUserInRoom';
-                            file_put_contents(TmpFileUser_path.'selectRoom.json', json_encode($file, JSON_PRETTY_PRINT));
-
-                            $bot->sendMessage($msg);
-                            $bot->sendReplyKeyboard(_('Seleziona una camera per vederne i membri:'), $roomsKeyboard);
-                        }
-                        elseif($update["text"] == _("Aggiungi nuova camera")){
-
-                            if($permission["NewRoom"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $bot->sendMessageForceReply(_('Invia il numero di posti della camera:'));
-                        }
-                        elseif($update["text"] == _("Visualizza utenti disabilitati")){
-                            $disabledUser = $db->query('SELECT * FROM User U WHERE U.Enabled IS FALSE;');
-
-                            if($disabledUser->num_rows == 0){
-                                $bot->sendMessage(_('Nessun utente disabilitato'));
-                                exit;
-                            }
-
-                            $msg = "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
-
-                            $usersName = [];
-                            while($row = $disabledUser->fetch_assoc()){
-                                $usersName[] = $row['FullName'];
-
-                                $msg .= $row["FullName"];
-
-                                if(!empty($row["Username"]) ){
-                                    $msg .= " - @".$row["Username"];
-                                }
-
-                                if(!empty($row['Room'])){
-                                    $msg .= _(" - Camera ").$row["Room"];
-                                }
-
-                                if($row['Type'] == 'group'){
-                                    $msg .= _(" - Gruppo ").PHP_EOL;
-                                }
-                                elseif($row['Type'] == 'private'){
-                                    $msg .= _(" - Privato ").PHP_EOL;
-                                }
-                                elseif($row['Type'] == 'channel'){
-                                    $msg .= _(" - Canale ").PHP_EOL;
-                                }
-                                elseif($row['Type'] == 'supergroup'){
-                                    $msg .= _(" - Super-gruppo ").PHP_EOL;
-                                }
-
-                                $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
-                            }
-                            $bot->sendMessage($msg);
-                        }
-                        elseif($update["text"] == _("Tutti i gruppi")){
                             $groupList = $db->getGroupList();
-
                             $rowNumber = sizeof($groupList);
                             $i=0;
-                            foreach ($groupList as $key => $value){
+                            foreach (array_keys($groupList) as $key){
                                 $i++;
-                                $userList = $db->getUserInGroup($key);
+                                $userInGroup = $db->getUserInGroup($key);
                                 if($i == $rowNumber){
-                                    $bot->sendReplyKeyboard(userInGroup($key,$userList),$keyboard);
+                                    $bot->sendReplyKeyboard(userInGroup($key,$userInGroup),$keyboard);
                                 }
                                 else{
-                                    $bot->sendMessage(userInGroup($key,$userList));
+                                    $bot->sendMessage(userInGroup($key,$userInGroup));
                                 }
                             }
-                        }
-                        elseif($update["text"] == _("Modifica email")." \u{1F4E7}"){
 
-                            if($permission["ChangeEmail"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
+                            $myChatID = $chatID;
+                            foreach (array_keys($users) as $key){
+                                if($key !== $myChatID){
+                                    $bot->setChatID($key);
+                                    $bot->sendMessage( _('Il calendario dei turni ed i gruppi sono stati aggiornati, ora fai parte dei seguenti gruppi:') );
 
-                            if(empty($user["Email"])){
-                                $bot->sendMessage(_("Attualmente non hai impostata nessuna email"));
-                            }else{
-                                $bot->sendMessage(_("L'e-mail attualmente impostata è ").$user["Email"]);
-                            }
-                            $bot->sendMessageForceReply(_("Invia la tua nuova email:"));
-                        }
-                        elseif($update["text"] == _("Assenza")." \u{1F44B}") {
+                                    $groups = $db->getGroupsByUser($key);
 
-                            if($permission["NewAbsence"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
+                                    $msg = '';
+                                    foreach(array_keys($groups) as $group){
+                                        $userInGroup = $db->getUserInGroup($group);
 
-                            $path = TmpFileUser_path."calendar.json";
-                            $type['Type'] = 'NewAbsence';
-                            file_put_contents($path,json_encode($type));
+                                        $msg .= "- - - - - - - - - - ".$group." - - - - - - - - - - \n";
 
-                            $bot->sendCalendar(time(), _("Usa le frecce per selezionare la data di partenza"),SELECT_DATE_INTERVALL);
-                        }
-                        elseif($update["text"] == _("Ospite")." \u{1F6CF}") {
+                                        foreach($userInGroup as $user){
 
-                            if($permission["NewGuest"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
+                                            $msg .= $user["FullName"];
 
-                            if(is_null($user['Room'])){
-                                $bot->sendMessage(_('Per poter registrare un ospite devi prima essere assegnato ad una camera'));
-                                exit;
-                            }
-
-                            //file temporaneo contenente i dati dell'ospite da inserire
-                            $fileName = TmpFileUser_path."tmpGuest.json";
-
-                            //Lettura dei dati dell'ospite dal file;
-                            $ospite = file_get_contents($fileName);
-
-                            //Se non è in corso la registrazione di un altro ospite
-                            if (($ospite === false) || (strpos($ospite, "null") !== false)) {
-                                $file['ChatID'] = $chatID;
-                                $file['Name'] = null;
-                                $file['CheckInDate'] = null;
-                                $file['LeavingDate'] = null;
-                                $file['RegistrationDate'] = date("Y-m-d h:i:sa");
-                                $file['FrontDocument'] = null;
-                                $file['BackDocument'] = null;
-                                $file['UserInRoom'] = $db->getUserInRoom($user["Room"])->num_rows;
-                                $file['UsersWhoHaveAccepted'] = 1;
-                                file_put_contents($fileName, json_encode($file, JSON_PRETTY_PRINT));
-                                $bot->sendMessage(_("ATTENZIONE: un ospite va CONFERMATO E REGISTRATO almeno 72 ore prima dell'arrivo in struttura, la prima data utile che hai a disposizione è il").' '.strftime('%d %h %Y', strtotime('+3 days')));
-                                $bot->sendMessageForceReply(_("Scrivi Nome e Cognome dell'ospite da registrare:"));
-                            }
-                            else{
-                                $bot->sendMessage(_("È in corso la registrazione di un altro ospite, attendi che sia confermato per poterne registrare un altro"));
-                            }
-                        }
-                        elseif($update["text"] == _("Gruppi")." \u{1F4CB}"){
-
-                            if($permission["GroupList"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $msg = _("Gruppi di cui fai parte: ".PHP_EOL);
-
-                            $groups = $db->getGroupsByUser($chatID);
-
-                            if(empty($groups)){
-                                $msg .= _('Nessuno');
-                            }
-
-                            foreach (array_keys($groups) as $key){
-                                $msg .= $key.PHP_EOL;
-                            }
-                            $bot->sendMessage($msg);
-
-                            $groupList = $db->getGroupList();
-
-                            if($groupList === false){
-                                $bot->sendMessage(_("Non è stato possibile recuperare la lista dei gruppi"));
-                            }
-                            elseif(sizeof($groupList) == 0) {
-                                if($permission['NewGroup']){
-                                    $groupKeyboard = createUserKeyboard(null, [ [ ['text' => _("Nuovo gruppo")] ], [['text' => "\u{1F3E1}"]] ]);
-                                    $bot->sendReplyKeyboard(_("Non esiste nessun gruppo"), $groupKeyboard);
-                                }
-                                else{
-                                    $bot->sendMessage(_("Non esiste nessun gruppo"));
-                                }
-                            }
-                            else{
-                                if($permission['NewGroup']){
-                                    $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => _("Nuovo gruppo")]], [['text' => "\u{1F3E1}"]] ]);
-                                }
-                                else{
-                                    $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => "\u{1F3E1}"]] ]);
-
-                                }
-                                $bot->sendReplyKeyboard(_("Seleziona un gruppo per vederne i membri:"), $groupKeyboard);
-                            }
-                        }
-                        elseif($update["text"] == _("Nuovo gruppo")){
-
-                            if($permission["NewGroup"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $bot->sendMessage('Da fare');
-
-                        }
-                        elseif($update["text"] == _("Le mie assenze")." \u{1F4CB}"){
-
-                            if($permission["MyAbsenceList"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $msg = "- - - - - - - - Le tue assenze - - - - - - - -"."\n\n";
-
-                            $absentsList = $db->getMyAbsence($chatID);
-
-                            if($absentsList->num_rows == 0){
-                                $msg .= _("Nessuna assenza registrata").PHP_EOL;
-                                $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
-                                $bot->sendMessage($msg);
-                            }
-                            else{
-                                $messageID = 0;
-                                while($row = $absentsList->fetch_assoc()){
-                                    $leavingDate = strtotime($row["LeavingDate"]);
-                                    $returnDate = strtotime($row["ReturnDate"]);
-
-                                    if($permission["DeleteAbsence"] == false and $permission['UpdateAbsence'] == false){
-                                        $msg .= _("Dal ").strftime('%d %h %Y',$leavingDate)._(" al ").strftime('%d %h %Y',$returnDate).PHP_EOL;
-                                        $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
-                                    }
-                                    else{
-                                        $msg = "- - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
-                                        $msg .= _("Dal ").strftime('%d %h %Y',$leavingDate)._(" al ").strftime('%d %h %Y',$returnDate).PHP_EOL;
-                                        $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
-
-                                        $keyboardAbsence = [];
-
-                                        if($permission['UpdateAbsence']){
-                                            $keyboardAbsence[] = ['text' => _("Modifica")." \u{270F}", 'callback_data' => "updateAbsence-$leavingDate-$returnDate"];
-                                        }
-
-                                        if($permission['DeleteAbsence']){
-                                            $keyboardAbsence[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteAbsence-$leavingDate-$returnDate"];
-                                        }
-
-                                        $keyboardAbsence = json_encode(['inline_keyboard'=> [$keyboardAbsence]],JSON_PRETTY_PRINT);
-
-                                        if($returnDate < time()){
-                                            $bot->sendMessage($msg);
-                                        }
-                                        else{
-                                            $msgResult = json_decode($bot->sendReplyKeyboard($msg,$keyboardAbsence),true);
-
-                                            $messageInLineKeyboard = file_get_contents($messageInLineKeyboardPath);
-                                            $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);
-                                            $messageInLineKeyboard[$msgResult["result"]["message_id"]] = $msg;
-                                            file_put_contents($messageInLineKeyboardPath ,json_encode($messageInLineKeyboard, JSON_PRETTY_PRINT));
-                                        }
-                                    }
-                                }
-
-                                if($permission["DeleteAbsence"] == false and $permission["UpdateAbsence"] == false){
-                                    $bot->sendMessage($msg);
-                                }
-                            }
-                        }
-                        elseif($update["text"] == _("I miei ospiti")." \u{1F4CB}"){
-
-                            if($permission["MyGuestList"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $msg = "- - - - - - - - - I tuoi ospiti - - - - - - - - -"."\n\n";
-
-                            $guestList = $db->getMyGuest($chatID);
-
-                            if($guestList->num_rows == 0){
-                                $msg .= _("Nessun ospite registrato").PHP_EOL;
-                                $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
-                                $bot->sendMessage($msg);
-                            }
-                            else{
-                                while($row = $guestList->fetch_assoc()){
-                                    $checkInDate = strtotime($row["CheckInDate"]);
-                                    $leavingDate = strtotime($row["LeavingDate"]);
-
-                                    if(($permission["DeleteGuest"] and $permission["UpdateGuest"]) == false){
-                                        $msg .= $row["Name"]._(" dal ").strftime('%e %h %Y', $checkInDate)._(" al ").strftime('%e %h %Y', $leavingDate).PHP_EOL;
-                                        $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
-                                    }
-                                    else{
-                                        sendMessageEditGuest($row, $permission, $messageInLineKeyboardPath);
-                                    }
-                                }
-
-                                if($permission["DeleteGuest"] == false){
-                                    $bot->sendMessage($msg);
-                                }
-                            }
-                        }
-                        elseif($update["text"] == _("Turni")." \u{1F9F9}"){
-                            $typeOfTurnList = $db->getTypeOfTurnList();
-
-                            if(is_null($typeOfTurnList)){
-                                $bot->sendMessage(_('Nessun turno in programma'));
-                                exit;
-                            }
-
-                            $_typeOfTurnList = [];
-                            while($row = $typeOfTurnList->fetch_assoc()){
-                                if($row['Frequency'] == 0 or $db->getStepNumOfTurn($row['Name']) == 0){
-                                    continue;
-                                }
-
-                                $_typeOfTurnList[] = $row['Name'];
-                            }
-
-                            $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
-
-                            $bot->sendReplyKeyboard(_('Seleziona un turno per visualizzarlo'), $typeOfTurnKeyboard);
-
-                            $file['Type'] = 'Show';
-                            file_put_contents(TmpFileUser_path.'selectTypeOfTurn.json', json_encode($file, JSON_PRETTY_PRINT));
-                        }
-                        elseif($update["text"] == _("Carica Linee guida")." \u{1F4D6}"){
-
-                            if($permission["NewGuideLine"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $bot->sendMessageForceReply(_("Invia il file con le nuove linee guida:"));
-                        }
-                        elseif($update["text"] == _("Esporta")." \u{1F4DD}"){
-
-                            if(($permission["ExportUserList"] or $permission["ExportGuest"] or $permission["ExportAbsence"]) == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $exportKeyboard = createPermissionKeyboard($permission,EXPORT_KEYBOARD_TEXT);
-                            $exportKeyboard[] = [['text' => "\u{1F3E1}"]];
-                            $exportKeyboard = json_encode(['keyboard'=>  $exportKeyboard, 'resize_keyboard'=> true] ,JSON_PRETTY_PRINT);
-
-                            $bot->sendReplyKeyboard(_("Scegli cosa vuoi esportare"), $exportKeyboard);
-                        }
-                        elseif($update["text"] == _("Lista utenti")){
-                            if($permission["ExportUserList"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            if(empty($user["Email"])){
-                                $bot->sendReplyKeyboard(_("Imposta un email per poter ricevere il file"), $keyboard);
-                                exit;
-                            }
-
-                            $bot->sendMessage("Attendi qualche istante...");
-
-                            $userList = $db->getUserList(false);
-                            $output = '"Nome";';
-                            $output.= '"Username telegram";';
-                            $output.= '"Email";';
-                            $output.= '"Data registrazione";';
-                            $output.= '"Camera";';
-                            $output.= '"Stato";';
-                            $output.="\n";
-
-                            while($row = $userList->fetch_assoc()){
-                                $output.='"'.$row['FullName'].'";';
-
-                                if(is_null($row['Username'])){
-                                    $output.='"(vuoto)";';
-                                }
-                                else{
-                                    $output.='"@'.$row['Username'].'";';
-                                }
-
-                                if(is_null($row['Email'])){
-                                    $output.='"(vuoto)";';
-                                }
-                                else{
-                                    $output.='"'.$row['Email'].'";';
-                                }
-
-                                $output.='"'.$row['InscriptionDate'].'";';
-                                $output.='"'.$row['Room'].'";';
-
-
-                                if($row['Enabled'] == 0){
-                                    $output.='"Disabilitato";';
-                                }
-                                else{
-                                    $output.='"Abilitato";';
-                                }
-                                $output.="\n";
-                            }
-
-                            $filePath = FILES_PATH.'export_archive/user_list/'.date('Y');
-                            if (!is_dir($filePath)){
-                                mkdir($filePath,0755, true);
-                            }
-
-                            file_put_contents("$filePath/Lista_utenti_".date('d_m_Y').".csv",$output);
-
-                            $from = 'giuliettobot@casadellostudentevillagiulia.it';
-                            $fromName = 'GiuliettoBot';
-                            $subject = _("Lista utenti registrati al ").date('d-m-Y');
-                            $file[0] = "$filePath/Lista_utenti_".date('d_m_Y').".csv";
-
-                            if (!email($user["Email"], $from, $fromName, $subject, '', $file)) {
-                                $bot->sendReplyKeyboard(_("Si è verificato un errore nell'inviare l'email"), $keyboard);
-                            }
-                            else{
-                                $bot->sendReplyKeyboard(_("Email inviata correttamente, controlla la tua casella di posta elettronica per consultare il file"), $keyboard);
-                            }
-                        }
-                        elseif($update["text"] == _("Ospiti")){
-                            if($permission["ExportGuest"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            if(empty($user["Email"])){
-                                $bot->sendReplyKeyboard(_("Imposta un email per poter ricevere il file"), $keyboard);
-                                exit;
-                            }
-
-                            $bot->sendMessage("Attendi qualche istante...");
-
-                            $userList = $db->getGuestReport();
-                            $output = '"Nome utente";';
-                            $output.= '"Username telegram";';
-                            $output.= '"Email";';
-                            $output.= '"Camera utente";';
-                            $output.= '"Nome Ospite";';
-                            $output.= '"Data arrivo";';
-                            $output.= '"Data partenza";';
-                            $output.= '"Camera";';
-                            $output.= '"Data registrazione";';
-                            $output.="\n";
-
-                            while($row = $userList->fetch_assoc()){
-                                $output.='"'.$row['FullName'].'";';
-
-                                if(is_null($row['Username'])){
-                                    $output.='"(vuoto)";';
-                                }
-                                else{
-                                    $output.='"@'.$row['Username'].'";';
-                                }
-
-                                if(is_null($row['Email'])){
-                                    $output.='"(vuoto)";';
-                                }
-                                else{
-                                    $output.='"'.$row['Email'].'";';
-                                }
-
-                                $output.='"'.$row['UserRoom'].'";';
-                                $output.='"'.$row['Name'].'";';
-                                $output.='"'.$row['CheckInDate'].'";';
-                                $output.='"'.$row['LeavingDate'].'";';
-                                $output.='"'.$row['Room'].'";';
-                                $output.='"'.$row['RegistrationDate'].'";';
-                                $output.="\n";
-                            }
-
-                            $filePath = FILES_PATH.'export_archive/guest/'.date('Y');
-                            if (!is_dir($filePath)){
-                                mkdir($filePath,0755, true);
-                            }
-
-                            file_put_contents("$filePath/Lista_ospiti_".date('d_m_Y').".csv",$output);
-
-                            $from = 'giuliettobot@casadellostudentevillagiulia.it';
-                            $fromName = 'GiuliettoBot';
-                            $subject = _("Lista ospiti registrati al ").date('d-m-Y');
-                            $file[0] = "$filePath/Lista_ospiti_".date('d_m_Y').".csv";
-
-                            if (!email($user["Email"], $from, $fromName, $subject, '', $file)) {
-                                $bot->sendReplyKeyboard(_("Si è verificato un errore nell'inviare l'email"), $keyboard);
-                            }
-                            else{
-                                $bot->sendReplyKeyboard(_("Email inviata correttamente, controlla la tua casella di posta elettronica per consultare il file"), $keyboard);
-                            }
-                        }
-                        elseif($update["text"] == _("Assenze")){
-                            if($permission["ExportAbsence"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            if(empty($user["Email"])){
-                                $bot->sendReplyKeyboard(_("Imposta un email per poter ricevere il file"), $keyboard);
-                                exit;
-                            }
-
-                            $bot->sendMessage("Attendi qualche istante...");
-
-                            $userList = $db->getAbsenceReport();
-                            $output = '"Nome";';
-                            $output.= '"Username telegram";';
-                            $output.= '"Email";';
-                            $output.= '"Camera";';
-                            $output.= '"Data partenza";';
-                            $output.= '"Data ritorno";';
-                            $output.="\n";
-
-                            while($row = $userList->fetch_assoc()){
-                                $output.='"'.$row['FullName'].'";';
-
-                                if(is_null($row['Username'])){
-                                    $output.='"(vuoto)";';
-                                }
-                                else{
-                                    $output.='"@'.$row['Username'].'";';
-                                }
-
-                                if(is_null($row['Email'])){
-                                    $output.='"(vuoto)";';
-                                }
-                                else{
-                                    $output.='"'.$row['Email'].'";';
-                                }
-
-                                $output.='"'.$row['Room'].'";';
-                                $output.='"'.$row['LeavingDate'].'";';
-                                $output.='"'.$row['ReturnDate'].'";';
-                                $output.="\n";
-                            }
-
-                            $filePath = FILES_PATH.'export_archive/absence/'.date('Y');
-                            if (!is_dir($filePath)){
-                                mkdir($filePath,0755, true);
-                            }
-
-                            file_put_contents("$filePath/Lista_assenze_".date('d_m_Y').".csv",$output);
-
-                            $from = 'giuliettobot@casadellostudentevillagiulia.it';
-                            $fromName = 'GiuliettoBot';
-                            $subject = _("Lista assenze registrate al ").date('d-m-Y');
-                            $file[0] = "$filePath/Lista_assenze_".date('d_m_Y').".csv";
-
-                            if (!email($user["Email"], $from, $fromName, $subject, '', $file)) {
-                                $bot->sendReplyKeyboard(_("Si è verificato un errore nell'inviare l'email"), $keyboard);
-                            }
-                            else{
-                                $bot->sendReplyKeyboard(_("Email inviata correttamente, controlla la tua casella di posta elettronica per consultare il file"), $keyboard);
-                            }
-
-                        }
-                        elseif($update["text"] == _("Calendario turni")." \u{1F5D3}"){
-                            if($permission["TurnCalendar"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $typeOfTurnList = $db->getTypeOfTurnList();
-
-                            if(is_null($typeOfTurnList)){
-                                $bot->sendMessage("Nessun turno in programma");
-                                exit;
-                            }
-
-                            $_typeOfTurnList = [];
-                            while($row = $typeOfTurnList->fetch_assoc()){
-                                if ($db->getStepNumOfTurn($row['Name']) == 0) {
-                                    continue;
-                                }
-
-                                $_typeOfTurnList[] = $row['Name'];
-                            }
-
-                            $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
-
-                            $bot->sendReplyKeyboard(_('Seleziona un turno per visualizzarne il calendario'), $typeOfTurnKeyboard);
-
-                            $file['Type'] = 'ShowCalendar';
-                            file_put_contents(TmpFileUser_path.'selectTypeOfTurn.json', json_encode($file, JSON_PRETTY_PRINT));
-                        }
-                        elseif($update["text"] == _("Tipi turno")." \u{1F4CB}"){
-                            if($permission["TypeOfTurnList"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $typeOfTurnList = $db->getTypeOfTurnList();
-
-                            if(empty($typeOfTurnList)){
-                                $bot->sendMessage(_('Non risulta registrato nessun turno'));
-                                exit;
-                            }
-
-                            $_typeOfTurnList = [];
-                            while($row = $typeOfTurnList->fetch_assoc()){
-                                $_typeOfTurnList[] = $row['Name'];
-                            }
-
-                            if($permission['NewTypeOfTurn']){
-                                $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
-                            }
-                            else{
-                                $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
-                            }
-
-                            $bot->sendReplyKeyboard(_('Seleziona un turno per visualizzarlo e modificarlo'), $typeOfTurnKeyboard);
-
-                            $file['Type'] = 'Edit';
-                            file_put_contents(TmpFileUser_path.'selectTypeOfTurn.json', json_encode($file, JSON_PRETTY_PRINT));
-                        }
-                        elseif($update["text"] == _('Crea nuovo turno')){
-                            if($permission["NewTypeOfTurn"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $bot->sendMessageForceReply(_("Scrivi il nome del nuovo turno da creare:"));
-                        }
-                        elseif($update["text"] == _("Scambia gruppo")." \u{1F503}"){
-                            if($permission["SwapGroup"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $file['Type'] = 'SelectUserForSwapTurn';
-                            file_put_contents(TmpFileUser_path.'selectUser.json', json_encode($file, JSON_PRETTY_PRINT));
-
-                            $userList = [];
-                            $users = $db->getUserList();
-                            while($row = $users->fetch_assoc()){
-                                $_permission = $db->getPermission($row['AccountType']);
-                                if($row['ChatID'] != $chatID and $_permission['PostedInGroup']){
-                                    $userList[$row['ChatID']] = $row['FullName'];
-                                }
-                            }
-                            $userKeyboard = createUserKeyboard($userList,[[['text' => "\u{1F3E1}"]]]);
-
-                            $bot->sendReplyKeyboard(_("Con chi vuoi fare a scambio di gruppo?"), $userKeyboard);
-                        }
-                        elseif($update["text"] == _("Riorganizza Gruppi")." \u{1F500}"){
-                            if($permission["RearrangeGroups"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $bot->sendMessage("No");
-
-                            /*
-                            $otp['Type'] = 'RearrangeGroups';
-                            $otp['OTP'] = rand(1000,9999);
-                            file_put_contents(TmpFileUser_path.'otp.json', json_encode($otp, JSON_PRETTY_PRINT));
-
-                            $bot->sendMessageForceReply(_('Scrivi il seguente codice per confermare:'));
-                            $bot->sendMessage($otp['OTP']);*/
-                        }
-                        elseif($update["text"] == _("Cambia lingua")." \u{1F524}"){
-                            $langArrayKeyboard[] = [['text' => _("Italiano")]];
-                            $langArrayKeyboard[] = [['text' => "\u{1F3E1}"]];
-                            $langKeyboard = json_encode(['keyboard'=>  $langArrayKeyboard, 'resize_keyboard'=> true] ,JSON_PRETTY_PRINT);
-                            $bot->sendReplyKeyboard(_("Seleziona la lingua"), $langKeyboard);
-                        }
-                        elseif($update["text"] == _("Italiano")){
-                            if($db->updateLanguage($chatID,'it')){
-                                $bot->sendReplyKeyboard(_("Lingua italiana impostata"), $keyboard);
-                            }
-                            else{
-                                $bot->sendReplyKeyboard(_("Si è verificato un problema nell'impostare la lingua da te richiesta"), $keyboard);
-                            }
-                        }
-                        elseif($update["text"] == _("Inglese")){
-                            if($db->updateLanguage($chatID,'en')){
-                                $bot->sendReplyKeyboard(_("The English language has been set"), $keyboard);
-                            }
-                            else{
-                                $bot->sendReplyKeyboard(_("Si è verificato un problema nell'impostare la lingua da te richiesta"), $keyboard);
-                            }
-                        }
-                        elseif(preg_match('/^('._('Nessuna camera').'|(\d+))$/',$update["text"],$words)){//Modifica stanza
-
-                            $selectType = file_get_contents(TmpFileUser_path.'selectRoom.json');
-                            $selectType = json_decode($selectType, true);
-                            $selectType = $selectType['Type'];
-
-                            if($selectType == 'ChangeUserRoom'){
-
-                                $changeRoom = file_get_contents(TmpFileUser_path.'changeRoom.json');
-
-                                if(!$permission["ChangeUserRoom"] or !$changeRoom){
-                                    $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                    exit;
-                                }
-
-                                if($words[1] == _('Nessuna camera')){
-                                    $words[1] = NULL;
-                                }
-
-                                $changeRoom = json_decode($changeRoom, true);
-                                $_chatID = $changeRoom['ChatID'];
-
-                                $_user = $db->getUser($_chatID);
-
-                                if($_user["Room"] === $words[1]){
-                                    if($words[21] == NULL){
-                                        $bot->sendMessage($_user['FullName'].' '._("risulta già senza una camera assegnata"));
-                                    }
-                                    else{
-                                        $bot->sendMessage($_user['FullName']._(" è già in camera ").$words[1]);
-                                    }
-
-                                    exit;
-                                }
-
-                                $users = $db->getUserList(false);
-                                $usersName = [];
-                                while($row = $users->fetch_assoc()){
-                                    $usersName[] = $row['FullName'];
-                                }
-                                $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
-
-                                if($db->updateRoom($_chatID,$words[1]) === false){
-                                    $bot->sendReplyKeyboard(_("Non è stato possibile assegnare ").$user['FullName']._(" alla camera ").$words[1],$usersKeyboard);
-                                }
-                                else{
-                                    $users = $db->getUserList(false);
-                                    $usersName = [];
-                                    while($row = $users->fetch_assoc()){
-                                        $usersName[] = $row['FullName'];
-                                    }
-                                    $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
-
-                                    sendUser($db->getUser($_chatID), $permission, $messageInLineKeyboardPath);
-
-                                    $bot->sendReplyKeyboard(_('Camera modificata'), $usersKeyboard);
-
-                                    if($_chatID != $chatID){
-                                        $bot->setChatID($_chatID);
-                                        if(!is_null($words[1])){
-                                            $bot->sendMessage(_("Sei stato assegnato alla camera ").$words[1]);
-                                        }
-                                    }
-                                }
-
-                                $file['Type'] = 'SelectUserForEdit';
-                                file_put_contents(TmpFileUser_path.'selectUser.json', json_encode($file, JSON_PRETTY_PRINT));
-
-                                unlink(TmpFileUser_path.'changeRoom.json');
-                            }
-                            elseif($selectType == 'SeeUserInRoom'){
-
-                                $roomNum = $words[1];
-                                $users = $db->getUserInRoom($roomNum);
-
-                                $msg = "- - - - - - "._("Utenti in camera").' '.$roomNum."  - - - - - -\n";
-
-                                if($users->num_rows == 0){
-                                    $msg .= _('Vuota');
-                                }
-                                else{
-                                    while($row = $users->fetch_assoc()){
-                                        $msg .= $row['FullName'];
-
-                                        if(!is_null($row['Username'])){
-                                            $msg .= ' - @'.$row['Username'];
+                                            if(!empty($user["Username"])){
+                                                $msg .= " - @".$user["Username"].PHP_EOL;
+                                            }
+                                            else{
+                                                $msg .= PHP_EOL;
+                                            }
                                         }
 
                                         $msg .= PHP_EOL;
                                     }
+
+                                    $bot->sendMessage($msg);
                                 }
-
-                                $keyboardAddRoomInGroup = json_encode(['inline_keyboard'=> [[['text' => _('Aggiungi ad un gruppo'), 'callback_data' => "AddRoomInGroup-$roomNum"]]] ],JSON_PRETTY_PRINT);
-
-                                $msgResult = json_decode( $bot->sendReplyKeyboard($msg, $keyboardAddRoomInGroup),true);
-
-                                $messageInLineKeyboard = file_get_contents($messageInLineKeyboardPath);
-                                $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);
-                                $messageInLineKeyboard[$msgResult["result"]["message_id"]] = $msg;
-                                file_put_contents($messageInLineKeyboardPath ,json_encode($messageInLineKeyboard, JSON_PRETTY_PRINT));
-                            }
-                        }
-                        /*elseif(preg_match("/^([_a-zA-Z\s]+)(\s*-\s*)(\S+[_\-\sa-zA-Z]+[0-9]*)$/",$update["text"],$words)){//Modifica nome o assegna gruppo
-
-                            //rimuove tutti gli spazi all'inizio e alla fine della stringa e quelli in più in mezzo alla stringa
-                            $words[1] = trim(preg_replace('/\s{2,}/',' ',$words[1]));
-                            $words[3] = trim(preg_replace('/\s{2,}/',' ',$words[3]));
-
-                            $_chatID = $db->getChatID($words[1]);
-                            $_user = $db->getUser($_chatID);
-
-                            if(is_null($_user)){
-                                $bot->sendMessage($words[1]._(" non risulta registrato"));
-                                exit;
-                            }
-
-                            if(array_key_exists(strtolower($words[3]),array_change_key_case($db->getGroupList()))){
-
-                                if($permission["InsertUserInGroup"] == false){
-                                    $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                    exit;
-                                }
-
-                                $_permission = $db->getPermission($db->getUser($_chatID)['AccountType']);
-                                if($_permission["PostedInGroup"] == false){
-                                    $bot->sendReplyKeyboard(_("Questo utente non può essere inserito in un gruppo"),$keyboard);
-                                    exit;
-                                }
-
-                                $groups = $db->getGroupsByUser($db->getChatID($words[1]));
-                                if(array_key_exists($words[3], $groups)){
-                                    $bot->sendMessage($words[1]._(" fa già parte del gruppo ").$words[3]);
-                                }
-                                elseif($db->insertUserInGroup($_chatID,$words[3]) == false){
-                                    $bot->sendReplyKeyboard(_("Non è stato possibile inserire ").$words[1]._(" nel gruppo ").$words[3]._(" controlla che l'utente sia registrato ed il gruppo esista."),$keyboard);
-                                }
-                                else{
-                                    $bot->sendReplyKeyboard($words[1]._(" assegnato al gruppo ").$words[3],$keyboard);
-
-                                    $bot->setChatID($_chatID);
-                                    $bot->sendMessage(_("Sei stato inserito nel gruppo ").$words[3]);
-                                }
-                            }
-                            else{
-
-                                if($permission["ChangeNameUser"] == false){
-                                    $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                    exit;
-                                }
-
-                                if($db->updateName($_chatID,$words[3]) == false){
-                                    $bot->sendReplyKeyboard(_("Non è stato possibile cambiare il nome da ").$words[1]._(" a ").$words[3]._(" controlla che l'utente sia registrato."),$keyboard);
-                                }
-                                else{
-                                    $bot->sendReplyKeyboard(_("Nome cambiato da ").$words[1]._(" a ").$words[3],$keyboard);
-
-                                    $oldName = preg_replace('/\s+/','_',$words[1]);
-                                    $newName = preg_replace('/\s+/','_',$words[3]);
-
-                                    rename(TMP_FILE_PATH.$oldName,TMP_FILE_PATH.$newName);
-
-                                    rename(LOG_FILE_PATH.$oldName,LOG_FILE_PATH.$newName);
-                                    rename(LOG_FILE_PATH.$newName."/$oldName.log",LOG_FILE_PATH.$newName."/$newName.log");
-                                }
-                            }
-                        }*/
-                        elseif(preg_match("/^([\w\s]+)( => )([\w\s]*)$/", $update['text'], $words) and array_key_exists($words[1],$db->getGroupList()) and array_key_exists($words[3],$db->getGroupList())){
-                            $swapGroup = file_get_contents(TmpFileUser_path.'swapGroup.json');
-                            $swapGroup = json_decode($swapGroup, true);
-
-                            if($permission["SwapGroup"] == false or !in_array($update['text'], $swapGroup['AllowedSwap'])){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $from = $swapGroup['from'];
-                            $to = $swapGroup['to'];
-
-                            $fromName = $db->getUser($from)['FullName'];
-                            $toName = $db->getUser($to)['FullName'];
-
-                            $fromGroup = $words[1];
-                            $toGroup = $words[3];
-
-                            $bot->sendReplyKeyboard(_('Attendi che ').$toName._(' accetti o rifiuti lo scambio'), $keyboard);
-
-                            $file['From'] = $from;
-                            $file['To'] = $to;
-                            $file['FromGroup'] = $fromGroup;
-                            $file['ToGroup'] = $toGroup;
-                            file_put_contents(TmpFileUser_path.'swapGroupData.json', json_encode($file, JSON_PRETTY_PRINT));
-
-                            $acceptText = _('Accetto');
-                            $refuseText = _('Rifiuto');
-
-                            $keyboardYesNoSwap = "{
-                                            \"inline_keyboard\":
-                                                [
-                                                    [
-                                                        { 
-                                                            \"text\":\"$acceptText\",
-                                                            \"callback_data\":\"swapAccepted-$from\"
-                                                        },
-                                                        {
-                                                            \"text\":\"$refuseText\",
-                                                            \"callback_data\":\"swapRefused-$from\"
-                                                        }
-                                                    ]
-                                                ]
-                                            }";
-
-                            $bot->setChatID($to);
-                            $bot->sendReplyKeyboard($fromName._(' ti propone di passare da ').$toGroup._(' a ').$fromGroup, $keyboardYesNoSwap);
-
-                            unlink(TmpFileUser_path.'swapGroup.json');
-                        }
-                        elseif(preg_match("/^(\/broadcast)(\s+)(.*)$/",$update["text"],$words)){
-                            if($permission["BroadcastMsg"] == false){
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                exit;
-                            }
-
-                            $usersList = $db->getUserList();
-                            $_users = [];
-                            while($row = $usersList->fetch_assoc()){
-                                $_users[] = $row['ChatID'];
-                            }
-
-                            sendNotification($_users, $words[3],$bot);
-                        }
-                        elseif($update["text"] == "/start"){
-                            $bot->sendReplyKeyboard(_("Bentornato, come posso aiutarti?"),$keyboard);
-                        }
-                        elseif($update["text"] == "/menu" or $update["text"] == "\u{1F3E1}"){
-                            $bot->sendReplyKeyboard("Menù",$keyboard);
-
-                            $files = glob(TmpFileUser_path.'*'); // get all file names
-
-                            foreach($files as $file){ // iterate files
-                                if(is_file($file) and $file !== basename('tmpGuest.json') and $file !== basename('updateGuest.json') ) {
-                                    unlink($file); // delete file
-                                }
-                            }
-                        }
-                        elseif(array_key_exists($update["text"],$db->getGroupList())){
-
-                            $purpose = file_get_contents(TmpFileUser_path.'selectGroup.json');
-                            $purpose = json_decode($purpose, true);
-
-                            $_user = $db->getUser($purpose['ChatID']);
-
-                            if($purpose['Type'] == 'insertUser'){
-
-                                sendUser($_user, $permission, $messageInLineKeyboardPath);
-
-                                if(!$db->insertUserInGroup($purpose['ChatID'], $update['text'])){
-                                    $bot->sendReplyKeyboard(_("Non è stato possibile inserire l'utente nel gruppo ").$update['text'],$keyboard);
-                                }
-                                else{
-
-                                    $users = $db->getUserList(false);
-                                    $usersName = [];
-                                    while($row = $users->fetch_assoc()){
-                                        $usersName[] = $row['FullName'];
-                                    }
-                                    $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
-
-                                    $bot->sendReplyKeyboard($_user['FullName']._(" inserito nel gruppo ").$update['text'],$usersKeyboard);
-
-                                    $bot->setChatID($purpose['ChatID']);
-                                    $bot->sendMessage(_("Sei stato inserito nel gruppo ").$update['text']);
-                                    $bot->sendMessage(userInGroup($update['text'], $db->getUserInGroup($update['text'])));
-                                }
-
-                                unlink(TmpFileUser_path.'selectGroup.json');
-                            }
-                            elseif($purpose['Type'] == 'deleteUserFromGroup'){
-                                sendUser($_user, $permission, $messageInLineKeyboardPath);
-
-                                if(!$db->removeUserFromGroup($purpose['ChatID'], $update['text'])){
-                                    $bot->sendReplyKeyboard(_("Non è stato possibile rimuovere l'utente dal gruppo ").$update['text'],$keyboard);
-                                }
-                                else{
-
-                                    $users = $db->getUserList(false);
-                                    $usersName = [];
-                                    while($row = $users->fetch_assoc()){
-                                        $usersName[] = $row['FullName'];
-                                    }
-                                    $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
-                                    $bot->sendReplyKeyboard($_user['FullName']._(" rimosso dal gruppo ").$update['text'],$usersKeyboard);
-
-                                    $bot->setChatID($purpose['ChatID']);
-                                    $bot->sendMessage(_("Sei stato rimosso dal gruppo ").$update['text']);
-                                }
-
-                                unlink(TmpFileUser_path.'insetDeleteGroupUser.json');
-                            }
-                            elseif($purpose['Type'] == 'insertRoom'){
-                                $userInRoom = $db->getUserInRoom($purpose['Room']);
-
-                                $myChatID = $chatID;
-
-                                while($row = $userInRoom->fetch_assoc()){
-
-                                    if(!in_array($row, $db->getUserInGroup($update['text']))){
-                                        if(!$db->insertUserInGroup($row['ChatID'], $update['text'])){
-                                            $bot->sendMessage(_("Non è stato possibile inserire").' '.$row['FullName'].' '._("nel gruppo ").$update['text']);
-                                        }
-                                        else{
-                                            $bot->setChatID($row['ChatID']);
-                                            $bot->sendMessage(_("Sei stato inserito nel gruppo ").$update['text']);
-                                        }
-                                    }
-                                }
-
-                                $rooms = $db->query('SELECT R.Num, R.Beds AS TotalBeds, COUNT(U.ChatID) AS OccupiedBeds FROM Room R LEFT JOIN User U ON R.Num = U.Room AND U.Enabled IS TRUE GROUP BY R.Num;');
-
-                                $_rooms = [];
-                                while($row = $rooms->fetch_assoc()){
-                                    $_rooms[] = $row['Num'];
-                                }
-
-                                if($permission["NewRoom"]){
-                                    $roomsKeyboard = createUserKeyboard($_rooms,[[['text' => _('Aggiungi nuova camera')]], [['text' => "\u{1F3E1}"]]]);
-                                }
-                                else{
-                                    $roomsKeyboard = createUserKeyboard($_rooms,[[['text' => "\u{1F3E1}"]]]);
-                                }
-
-                                $bot->setChatID($myChatID);
-                                $userInGroup = $db->getUserInGroup($update['text']);
-                                $bot->sendReplyKeyboard(userInGroup($update['text'], $userInGroup), $roomsKeyboard);
-
-                                unlink(TmpFileUser_path.'selectGroup.json');
-                            }
-                            else{
-                                $userList = $db->getUserInGroup($update["text"]);
-                                $bot->sendMessage(userInGroup($update["text"],$userList));
-                            }
-                        }
-                        elseif($db->getUser($db->getChatID($update["text"])) != false){
-
-                            $selectType = file_get_contents(TmpFileUser_path.'selectUser.json');
-                            $selectType = json_decode($selectType, true);
-
-                            if($selectType['Type'] == 'SelectUserForEdit'){
-
-                                sendUser($db->getUser($db->getChatID($update['text'])), $permission, $messageInLineKeyboardPath);
-
-                            }
-                            elseif($selectType['Type'] == 'SelectUserForSwapTurn'){
-                                if($permission["SwapGroup"] == false){
-                                    $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                                    exit;
-                                }
-
-                                $swapGroup['from'] = $chatID;
-                                $swapGroup['to'] = $db->getChatID($update["text"]);
-
-
-                                $fromGroups = $db->getGroupsByUser($chatID);
-                                $toGroups = $db->getGroupsByUser($db->getChatID($update['text']));
-
-                                $buttonText = [];
-                                foreach($fromGroups as $key => $value){
-                                    if(!in_array($key, array_keys($toGroups))){
-                                        foreach($toGroups as $key1 => $value1){
-                                            if( ($value == $value1) and !in_array($key1, array_keys($fromGroups)) ){
-                                                $buttonText[] = $key.' => '.$key1;
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if(empty($buttonText)){
-                                    $bot->sendMessage(_('Non è disponibile alcun gruppo per effettuare lo scambio'));
-                                }
-                                else{
-                                    $swapGroup['AllowedSwap'] = $buttonText;
-                                    file_put_contents(TmpFileUser_path.'swapGroup.json', json_encode($swapGroup, JSON_PRETTY_PRINT));
-
-                                    $swapKeyboard = createUserKeyboard($buttonText,[[['text' => "\u{1F3E1}"]]]);
-                                    $bot->sendReplyKeyboard(_('Scegli lo scambio da fare:'), $swapKeyboard);
-                                }
-                            }
-                            else{
-                                $bot->sendMessage('Fanculo sandro');
-                            }
-
-                        }
-                        elseif($db->getTypeOfTurn($update["text"]) != false){
-
-                            $file = file_get_contents(TmpFileUser_path.'selectTypeOfTurn.json');
-                            $file = json_decode($file, true);
-
-                            if($file['Type'] == 'Show'){
-                                $typeOfTurn = $db->getTypeOfTurn($update['text']);
-
-                                $frequency = $typeOfTurn["Frequency"];
-                                $lastExecution = $typeOfTurn["LastExecution"];
-                                $firstExecution = $typeOfTurn["FirstExecution"];
-                                $turnName = $typeOfTurn["Name"];
-
-                                if(is_null($lastExecution)){
-                                    $msg = "- - - - - -  "._("Turno")." $turnName  - - - - - - \n";
-                                    $msg.= _('Il turno inizierà il').' '.strftime('%e %h %Y', strtotime($firstExecution)).PHP_EOL._('con il gruppo').' '.$db->getGroupWillDoTheNextTurn($turnName)["Squad"].PHP_EOL;
-                                }
-                                else{
-                                    $remainingDays = 0;
-                                    if($lastExecution == date("Y-m-d")){
-                                        $passedDays = $frequency;
-                                        $users = $db->getUsersOfTurnPerformed(date("Y-m-d",strtotime("$lastExecution - $frequency days")),$turnName)["Users"];
-                                    }
-                                    else{
-                                        $passedDays = date_diff(new DateTime($lastExecution),new DateTime(date("Y-m-d")))->days;
-                                        $remainingDays = date_diff(new DateTime(date("Y-m-d")), new DateTime(date("Y-m-d", strtotime("$lastExecution + $frequency days"))))->days;
-                                        $users = $db->getUsersOfTurnPerformed($lastExecution,$turnName)["Users"];
-                                    }
-
-                                    $msg = "- - - - - -  "._("Turno")." $turnName  - - - - - -\n";
-
-                                    if($passedDays == 1){
-                                        if(empty($users)){
-                                            $msg.= _("Ieri: Non presente nello storico").PHP_EOL;
-                                        }
-                                        else{
-                                            $msg.= _("Ieri: ").$users.PHP_EOL;
-                                        }
-                                    }else{
-                                        if(empty($users)){
-                                            $msg.= $passedDays._(" giorni fà: Non presente nello storico").PHP_EOL;
-                                        }
-                                        else{
-                                            $msg.= $passedDays._(" giorni fà: ").$users.PHP_EOL;
-                                        }
-                                    }
-
-                                    if($remainingDays == 0){
-                                        $msg.= _("Oggi: ").$db->getGroupWillDoTheNextTurn($turnName)["Squad"].PHP_EOL;
-                                    }else{
-                                        $msg.= _("Tra")." $remainingDays "._("giorni: ").$db->getGroupWillDoTheNextTurn($turnName)["Squad"].PHP_EOL;
-                                    }
-
-                                    $myGroups = $db->getGroupsByUser($chatID);
-                                    $_myGroups = [];
-                                    foreach($myGroups as $key => $value){
-                                        if(strpos( $value, $turnName) !== false){
-                                            $_myGroups[] = $key;
-                                        }
-                                    }
-
-                                    for($i=1; $i<$db->getStepNumOfTurn($turnName); $i++){
-                                        if(in_array($db->getGroupWillDoTheNextTurn($turnName, $i)['Squad'], $_myGroups)){
-                                            $msg .= _("Tuo prossimo: ").strftime('%e %h %Y', strtotime("+$i days")).PHP_EOL;
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                $msg .= "- - - - - - - - - - - - - - - - - - - - - - - -\n";
-                                $bot->sendMessage($msg);
-
-                            }
-                            elseif($file['Type'] == 'Edit'){
-                                sendMessageEditTypeOfTurn($db->getTypeOfTurn($update["text"]), $permission, $messageInLineKeyboardPath);
-                            }
-                            elseif($file['Type'] == 'ShowCalendar'){
-                                $typeOfTurn = $db->getTypeOfTurn($update['text']);
-
-                                $frequency = $typeOfTurn["Frequency"];
-                                $lastExecution = $typeOfTurn["LastExecution"];
-                                $firstExecution = $typeOfTurn["FirstExecution"];
-                                $turnName = $typeOfTurn["Name"];
-
-                                $msg = "- - - - - -  "._("Turno")." $turnName  - - - - - -\n";
-
-                                for($i=0; $i<$db->getStepNumOfTurn($turnName); $i++){
-
-                                    $days = $i*$frequency;
-
-                                    if(is_null($lastExecution)){
-                                        $days += date_diff(new DateTime($firstExecution),new DateTime(date("Y-m-d")))->days;
-                                    }
-                                    else{
-                                        $days += date_diff(new DateTime($lastExecution),new DateTime(date("Y-m-d")))->days +1;
-                                    }
-
-                                    $msg .= strftime('%e %h %Y', strtotime("+$days days")).': '.$db->getGroupWillDoTheNextTurn($turnName,$i)["Squad"].PHP_EOL;
-                                }
-
-                                $bot->sendMessage($msg);
-
-                                $bot->sendMessage(_("Nelle date successive i turni verranno eseguiti ciclicamente dai gruppi nell'ordine mostrato"));
-                            }
-                            else{
-                                $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-
                             }
                         }
                         else{
-                            $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                            $bot->sendMessage(_('Il codice inserito non è valido, i gruppi non verranno riorganizzati'));
+                        }
 
-                            $files = glob(TmpFileUser_path.'*'); // get all file names
-                            foreach($files as $file){ // iterate files
-                                if(is_file($file) and $file !== 'tmpGuest.json') {
-                                    unlink($file); // delete file
-                                }
-                            }
+                    }
+
+                    unlink(TmpFileUser_path.'otp.json');
+                }
+                elseif($update["text"] == _("Linee guida")." \u{1F4D6}") { //invia il pdf con le linee guida
+                    if(file_exists(FILES_PATH."/Linee_guida.pdf")){
+
+                        $bot->sendDocument(FILES_PATH.'Linee_guida.pdf');
+
+                    }else{
+                        $bot->sendMessage("Il file delle linee guida non è disponibile");
+                    }
+                }
+                elseif($update["text"] == _("Lista assenti")." \u{1F4CB}"){
+
+                    if($permission["AbsenceList"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $path = TmpFileUser_path."calendar.json";
+                    $type['Type'] = 'AbsenceList';
+                    file_put_contents($path,json_encode($type));
+                    $bot->sendCalendar(time(),_("Seleziona il giorno per cui vuoi visualizzare le assenze"),SELECT_DATE_INTERVALL);
+                }
+                elseif($update["text"] == _("Lista ospiti")." \u{1F4CB}"){
+
+                    if($permission["GuestList"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $path = TmpFileUser_path."calendar.json";
+                    $type['Type'] = 'GuestList';
+                    file_put_contents($path,json_encode($type));
+                    $bot->sendCalendar(time(),_("Seleziona il giorno per cui vuoi visualizzare gli ospiti"),SELECT_DATE_INTERVALL);
+                }
+                elseif($update["text"] == _("Lista utenti")." \u{1F4CB}"){
+
+                    if($permission["UserList"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $users = $db->getUserList(false);
+
+                    if($users === false){
+                        $bot->sendMessage(_("Non è stato possibile recuperare la lista degli utenti"));
+                    }
+                    else{
+
+                        sendUserList($db->getUserList(false));
+
+                        $usersName = [];
+                        while($row = $users->fetch_assoc()){
+                            $usersName[] = $row['FullName'];
+                        }
+
+                        if($permission['ChangeUserState'] or $permission['DeleteUser'] or $permission['ChangeNameUser'] or $permission['ChangeUserRoom']){
+                            $file['Type'] = 'SelectUserForEdit';
+
+                            file_put_contents(TmpFileUser_path.'selectUser.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                            $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
+                            $bot->sendReplyKeyboard(_('Seleziona un utente per modificarlo:'), $usersKeyboard);
+                        }
+                    }
+                }
+                elseif($update["text"] == _("Lista camere")." \u{1F4CB}"){
+
+                    if($permission["ChangeUserRoom"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $rooms = $db->query('SELECT R.Num, R.Beds AS TotalBeds, COUNT(U.ChatID) AS OccupiedBeds FROM Room R LEFT JOIN User U ON R.Num = U.Room AND U.Enabled IS TRUE GROUP BY R.Num;');
+
+                    $msg = '- - - - - - '._('Lista Camere').' - - - - - -'.PHP_EOL;
+                    $_rooms = [];
+                    while($row = $rooms->fetch_assoc()){
+                        $_rooms[] = $row['Num'];
+                        $msg .= _('Camera ').$row['Num'].': '._('Posti occupati').' '.$row['OccupiedBeds'].'/'.$row['TotalBeds'].PHP_EOL;
+                    }
+
+                    if($permission["NewRoom"]){
+                        $roomsKeyboard = createUserKeyboard($_rooms,[[['text' => _('Aggiungi nuova camera')]], [['text' => "\u{1F3E1}"]]]);
+                    }
+                    else{
+                        $roomsKeyboard = createUserKeyboard($_rooms,[[['text' => "\u{1F3E1}"]]]);
+                    }
+
+                    $file['Type'] = 'SeeUserInRoom';
+                    file_put_contents(TmpFileUser_path.'selectRoom.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                    $bot->sendMessage($msg);
+                    $bot->sendReplyKeyboard(_('Seleziona una camera per vederne i membri:'), $roomsKeyboard);
+                }
+                elseif($update["text"] == _("Aggiungi nuova camera")){
+
+                    if($permission["NewRoom"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $bot->sendMessageForceReply(_('Invia il numero di posti della camera:'));
+                }
+                elseif($update["text"] == _("Visualizza utenti disabilitati")){
+                    $disabledUser = $db->query('SELECT * FROM User U WHERE U.Enabled IS FALSE;');
+
+                    if($disabledUser->num_rows == 0){
+                        $bot->sendMessage(_('Nessun utente disabilitato'));
+                        exit;
+                    }
+
+                    $msg = "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+
+                    $usersName = [];
+                    while($row = $disabledUser->fetch_assoc()){
+                        $usersName[] = $row['FullName'];
+
+                        $msg .= $row["FullName"];
+
+                        if(!empty($row["Username"]) ){
+                            $msg .= " - @".$row["Username"];
+                        }
+
+                        if(!empty($row['Room'])){
+                            $msg .= _(" - Camera ").$row["Room"];
+                        }
+
+                        if($row['Type'] == 'group'){
+                            $msg .= _(" - Gruppo ").PHP_EOL;
+                        }
+                        elseif($row['Type'] == 'private'){
+                            $msg .= _(" - Privato ").PHP_EOL;
+                        }
+                        elseif($row['Type'] == 'channel'){
+                            $msg .= _(" - Canale ").PHP_EOL;
+                        }
+                        elseif($row['Type'] == 'supergroup'){
+                            $msg .= _(" - Super-gruppo ").PHP_EOL;
+                        }
+
+                        $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+                    }
+                    $bot->sendMessage($msg);
+                }
+                elseif($update["text"] == _("Tutti i gruppi")){
+                    $groupList = $db->getGroupList();
+
+                    $rowNumber = sizeof($groupList);
+                    $i=0;
+                    foreach ($groupList as $key => $value){
+                        $i++;
+                        $userList = $db->getUserInGroup($key);
+                        if($i == $rowNumber){
+                            $bot->sendReplyKeyboard(userInGroup($key,$userList),$keyboard);
+                        }
+                        else{
+                            $bot->sendMessage(userInGroup($key,$userList));
+                        }
+                    }
+                }
+                elseif($update["text"] == _("Modifica email")." \u{1F4E7}"){
+
+                    if($permission["ChangeEmail"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    if(empty($user["Email"])){
+                        $bot->sendMessage(_("Attualmente non hai impostata nessuna email"));
+                    }else{
+                        $bot->sendMessage(_("L'e-mail attualmente impostata è ").$user["Email"]);
+                    }
+                    $bot->sendMessageForceReply(_("Invia la tua nuova email:"));
+                }
+                elseif($update["text"] == _("Assenza")." \u{1F44B}") {
+
+                    if($permission["NewAbsence"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $path = TmpFileUser_path."calendar.json";
+                    $type['Type'] = 'NewAbsence';
+                    file_put_contents($path,json_encode($type));
+
+                    $bot->sendCalendar(time(), _("Usa le frecce per selezionare la data di partenza"),SELECT_DATE_INTERVALL);
+                }
+                elseif($update["text"] == _("Ospite")." \u{1F6CF}") {
+
+                    if($permission["NewGuest"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    if(is_null($user['Room'])){
+                        $bot->sendMessage(_('Per poter registrare un ospite devi prima essere assegnato ad una camera'));
+                        exit;
+                    }
+
+                    //file temporaneo contenente i dati dell'ospite da inserire
+                    $fileName = TmpFileUser_path."tmpGuest.json";
+
+                    //Lettura dei dati dell'ospite dal file;
+                    $ospite = file_get_contents($fileName);
+
+                    //Se non è in corso la registrazione di un altro ospite
+                    if (($ospite === false) || (strpos($ospite, "null") !== false)) {
+                        $file['ChatID'] = $chatID;
+                        $file['Name'] = null;
+                        $file['CheckInDate'] = null;
+                        $file['LeavingDate'] = null;
+                        $file['RegistrationDate'] = date("Y-m-d h:i:sa");
+                        $file['FrontDocument'] = null;
+                        $file['BackDocument'] = null;
+                        $file['UserInRoom'] = $db->getUserInRoom($user["Room"])->num_rows;
+                        $file['UsersWhoHaveAccepted'] = 1;
+                        file_put_contents($fileName, json_encode($file, JSON_PRETTY_PRINT));
+                        $bot->sendMessage(_("ATTENZIONE: un ospite va CONFERMATO E REGISTRATO almeno 72 ore prima dell'arrivo in struttura, la prima data utile che hai a disposizione è il").' '.strftime('%d %h %Y', strtotime('+3 days')));
+                        $bot->sendMessageForceReply(_("Scrivi Nome e Cognome dell'ospite da registrare:"));
+                    }
+                    else{
+                        $bot->sendMessage(_("È in corso la registrazione di un altro ospite, attendi che sia confermato per poterne registrare un altro"));
+                    }
+                }
+                elseif($update["text"] == _("Gruppi")." \u{1F4CB}"){
+
+                    if($permission["GroupList"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $msg = _("Gruppi di cui fai parte: ".PHP_EOL);
+
+                    $groups = $db->getGroupsByUser($chatID);
+
+                    if(empty($groups)){
+                        $msg .= _('Nessuno');
+                    }
+
+                    foreach (array_keys($groups) as $key){
+                        $msg .= $key.PHP_EOL;
+                    }
+                    $bot->sendMessage($msg);
+
+                    $groupList = $db->getGroupList();
+
+                    if($groupList === false){
+                        $bot->sendMessage(_("Non è stato possibile recuperare la lista dei gruppi"));
+                    }
+                    elseif(sizeof($groupList) == 0) {
+                        if($permission['NewGroup']){
+                            $groupKeyboard = createUserKeyboard(null, [ [ ['text' => _("Nuovo gruppo")] ], [['text' => "\u{1F3E1}"]] ]);
+                            $bot->sendReplyKeyboard(_("Non esiste nessun gruppo"), $groupKeyboard);
+                        }
+                        else{
+                            $bot->sendMessage(_("Non esiste nessun gruppo"));
                         }
                     }
                     else{
-                        $bot->sendMessage(_("Il tuo account è stato disabilitato, non ti sarà possibile utilizzare il bot fino a quando non verrà riattivato."));
+                        if($permission['NewGroup']){
+                            $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => _("Nuovo gruppo")]], [['text' => "\u{1F3E1}"]] ]);
+                        }
+                        else{
+                            $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => "\u{1F3E1}"]] ]);
+
+                        }
+                        $bot->sendReplyKeyboard(_("Seleziona un gruppo per vederne i membri:"), $groupKeyboard);
                     }
                 }
-                else{
-                    $bot->sendMessage(_("Effettua l'accesso per poter utilizzare il bot, per accedere invia un messaggio in questo formato: pw-password, dove password è la password che ti è stata fornita per l'accesso"));
+                elseif($update["text"] == _("Nuovo gruppo")){
+
+                    if($permission["NewGroup"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $bot->sendMessage('Da fare');
+
+                }
+                elseif($update["text"] == _("Le mie assenze")." \u{1F4CB}"){
+
+                    if($permission["MyAbsenceList"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $msg = "- - - - - - - - Le tue assenze - - - - - - - -"."\n\n";
+
+                    $absentsList = $db->getMyAbsence($chatID);
+
+                    if($absentsList->num_rows == 0){
+                        $msg .= _("Nessuna assenza registrata").PHP_EOL;
+                        $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+                        $bot->sendMessage($msg);
+                    }
+                    else{
+                        $messageID = 0;
+                        while($row = $absentsList->fetch_assoc()){
+                            $leavingDate = strtotime($row["LeavingDate"]);
+                            $returnDate = strtotime($row["ReturnDate"]);
+
+                            if($permission["DeleteAbsence"] == false and $permission['UpdateAbsence'] == false){
+                                $msg .= _("Dal ").strftime('%d %h %Y',$leavingDate)._(" al ").strftime('%d %h %Y',$returnDate).PHP_EOL;
+                                $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+                            }
+                            else{
+                                $msg = "- - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+                                $msg .= _("Dal ").strftime('%d %h %Y',$leavingDate)._(" al ").strftime('%d %h %Y',$returnDate).PHP_EOL;
+                                $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+
+                                $keyboardAbsence = [];
+
+                                if($permission['UpdateAbsence']){
+                                    $keyboardAbsence[] = ['text' => _("Modifica")." \u{270F}", 'callback_data' => "updateAbsence-$leavingDate-$returnDate"];
+                                }
+
+                                if($permission['DeleteAbsence']){
+                                    $keyboardAbsence[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteAbsence-$leavingDate-$returnDate"];
+                                }
+
+                                $keyboardAbsence = json_encode(['inline_keyboard'=> [$keyboardAbsence]],JSON_PRETTY_PRINT);
+
+                                if($returnDate < time()){
+                                    $bot->sendMessage($msg);
+                                }
+                                else{
+                                    $msgResult = json_decode($bot->sendReplyKeyboard($msg,$keyboardAbsence),true);
+
+                                    $messageInLineKeyboard = file_get_contents($messageInLineKeyboardPath);
+                                    $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);
+                                    $messageInLineKeyboard[$msgResult["result"]["message_id"]] = $msg;
+                                    file_put_contents($messageInLineKeyboardPath ,json_encode($messageInLineKeyboard, JSON_PRETTY_PRINT));
+                                }
+                            }
+                        }
+
+                        if($permission["DeleteAbsence"] == false and $permission["UpdateAbsence"] == false){
+                            $bot->sendMessage($msg);
+                        }
+                    }
+                }
+                elseif($update["text"] == _("I miei ospiti")." \u{1F4CB}"){
+
+                    if($permission["MyGuestList"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $msg = "- - - - - - - - - I tuoi ospiti - - - - - - - - -"."\n\n";
+
+                    $guestList = $db->getMyGuest($chatID);
+
+                    if($guestList->num_rows == 0){
+                        $msg .= _("Nessun ospite registrato").PHP_EOL;
+                        $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+                        $bot->sendMessage($msg);
+                    }
+                    else{
+                        while($row = $guestList->fetch_assoc()){
+                            $checkInDate = strtotime($row["CheckInDate"]);
+                            $leavingDate = strtotime($row["LeavingDate"]);
+
+                            if(($permission["DeleteGuest"] and $permission["UpdateGuest"]) == false){
+                                $msg .= $row["Name"]._(" dal ").strftime('%e %h %Y', $checkInDate)._(" al ").strftime('%e %h %Y', $leavingDate).PHP_EOL;
+                                $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+                            }
+                            else{
+                                sendMessageEditGuest($row, $permission, $messageInLineKeyboardPath);
+                            }
+                        }
+
+                        if($permission["DeleteGuest"] == false){
+                            $bot->sendMessage($msg);
+                        }
+                    }
+                }
+                elseif($update["text"] == _("Turni")." \u{1F9F9}"){
+                    $typeOfTurnList = $db->getTypeOfTurnList();
+
+                    if($typeOfTurnList->num_rows === 0){
+                        $bot->sendMessage(_('Nessun turno in programma'));
+                        exit;
+                    }
+
+                    $_typeOfTurnList = [];
+                    while($row = $typeOfTurnList->fetch_assoc()){
+                        if($row['Frequency'] == 0 or $db->getStepNumOfTurn($row['Name']) == 0){
+                            continue;
+                        }
+
+                        $_typeOfTurnList[] = $row['Name'];
+                    }
+
+                    $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
+
+                    $bot->sendReplyKeyboard(_('Seleziona un turno per visualizzarlo'), $typeOfTurnKeyboard);
+
+                    $file['Type'] = 'Show';
+                    file_put_contents(TmpFileUser_path.'selectTypeOfTurn.json', json_encode($file, JSON_PRETTY_PRINT));
+                }
+                elseif($update["text"] == _("Carica Linee guida")." \u{1F4D6}"){
+
+                    if($permission["NewGuideLine"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $bot->sendMessageForceReply(_("Invia il file con le nuove linee guida:"));
+                }
+                elseif($update["text"] == _("Esporta")." \u{1F4DD}"){
+
+                    if(($permission["ExportUserList"] or $permission["ExportGuest"] or $permission["ExportAbsence"]) == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $exportKeyboard = createPermissionKeyboard($permission,EXPORT_KEYBOARD_TEXT);
+                    $exportKeyboard[] = [['text' => "\u{1F3E1}"]];
+                    $exportKeyboard = json_encode(['keyboard'=>  $exportKeyboard, 'resize_keyboard'=> true] ,JSON_PRETTY_PRINT);
+
+                    $bot->sendReplyKeyboard(_("Scegli cosa vuoi esportare"), $exportKeyboard);
+                }
+                elseif($update["text"] == _("Lista utenti")){
+                    if($permission["ExportUserList"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    if(empty($user["Email"])){
+                        $bot->sendReplyKeyboard(_("Imposta un email per poter ricevere il file"), $keyboard);
+                        exit;
+                    }
+
+                    $bot->sendMessage("Attendi qualche istante...");
+
+                    $userList = $db->getUserList(false);
+                    $output = '"Nome";';
+                    $output.= '"Username telegram";';
+                    $output.= '"Email";';
+                    $output.= '"Data registrazione";';
+                    $output.= '"Camera";';
+                    $output.= '"Stato";';
+                    $output.="\n";
+
+                    while($row = $userList->fetch_assoc()){
+                        $output.='"'.$row['FullName'].'";';
+
+                        if(empty($row['Username'])){
+                            $output.='"(vuoto)";';
+                        }
+                        else{
+                            $output.='"@'.$row['Username'].'";';
+                        }
+
+                        if(empty($row['Email'])){
+                            $output.='"(vuoto)";';
+                        }
+                        else{
+                            $output.='"'.$row['Email'].'";';
+                        }
+
+                        $output.='"'.$row['InscriptionDate'].'";';
+                        $output.='"'.$row['Room'].'";';
+
+
+                        if($row['Enabled'] == 0){
+                            $output.='"Disabilitato";';
+                        }
+                        else{
+                            $output.='"Abilitato";';
+                        }
+                        $output.="\n";
+                    }
+
+                    $filePath = FILES_PATH.'export_archive/user_list/'.date('Y');
+                    if (!is_dir($filePath)){
+                        mkdir($filePath,0755, true);
+                    }
+
+                    file_put_contents("$filePath/Lista_utenti_".date('d_m_Y').".csv",$output);
+
+                    $from = 'giuliettobot@casadellostudentevillagiulia.it';
+                    $fromName = 'GiuliettoBot';
+                    $subject = _("Lista utenti registrati al ").date('d-m-Y');
+                    $file[0] = "$filePath/Lista_utenti_".date('d_m_Y').".csv";
+
+                    if (!email($user["Email"], $from, $fromName, $subject, '', $file)) {
+                        $bot->sendReplyKeyboard(_("Si è verificato un errore nell'inviare l'email"), $keyboard);
+                    }
+                    else{
+                        $bot->sendReplyKeyboard(_("Email inviata correttamente, controlla la tua casella di posta elettronica per consultare il file"), $keyboard);
+                    }
+                }
+                elseif($update["text"] == _("Ospiti")){
+                    if($permission["ExportGuest"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    if(empty($user["Email"])){
+                        $bot->sendReplyKeyboard(_("Imposta un email per poter ricevere il file"), $keyboard);
+                        exit;
+                    }
+
+                    $bot->sendMessage("Attendi qualche istante...");
+
+                    $userList = $db->getGuestReport();
+                    $output = '"Nome utente";';
+                    $output.= '"Username telegram";';
+                    $output.= '"Email";';
+                    $output.= '"Camera utente";';
+                    $output.= '"Nome Ospite";';
+                    $output.= '"Data arrivo";';
+                    $output.= '"Data partenza";';
+                    $output.= '"Camera";';
+                    $output.= '"Data registrazione";';
+                    $output.="\n";
+
+                    while($row = $userList->fetch_assoc()){
+                        $output.='"'.$row['FullName'].'";';
+
+                        if(empty($row['Username'])){
+                            $output.='"(vuoto)";';
+                        }
+                        else{
+                            $output.='"@'.$row['Username'].'";';
+                        }
+
+                        if(empty($row['Email'])){
+                            $output.='"(vuoto)";';
+                        }
+                        else{
+                            $output.='"'.$row['Email'].'";';
+                        }
+
+                        $output.='"'.$row['UserRoom'].'";';
+                        $output.='"'.$row['Name'].'";';
+                        $output.='"'.$row['CheckInDate'].'";';
+                        $output.='"'.$row['LeavingDate'].'";';
+                        $output.='"'.$row['Room'].'";';
+                        $output.='"'.$row['RegistrationDate'].'";';
+                        $output.="\n";
+                    }
+
+                    $filePath = FILES_PATH.'export_archive/guest/'.date('Y');
+                    if (!is_dir($filePath)){
+                        mkdir($filePath,0755, true);
+                    }
+
+                    file_put_contents("$filePath/Lista_ospiti_".date('d_m_Y').".csv",$output);
+
+                    $from = 'giuliettobot@casadellostudentevillagiulia.it';
+                    $fromName = 'GiuliettoBot';
+                    $subject = _("Lista ospiti registrati al ").date('d-m-Y');
+                    $file[0] = "$filePath/Lista_ospiti_".date('d_m_Y').".csv";
+
+                    if (!email($user["Email"], $from, $fromName, $subject, '', $file)) {
+                        $bot->sendReplyKeyboard(_("Si è verificato un errore nell'inviare l'email"), $keyboard);
+                    }
+                    else{
+                        $bot->sendReplyKeyboard(_("Email inviata correttamente, controlla la tua casella di posta elettronica per consultare il file"), $keyboard);
+                    }
+                }
+                elseif($update["text"] == _("Assenze")){
+                    if($permission["ExportAbsence"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    if(empty($user["Email"])){
+                        $bot->sendReplyKeyboard(_("Imposta un email per poter ricevere il file"), $keyboard);
+                        exit;
+                    }
+
+                    $bot->sendMessage("Attendi qualche istante...");
+
+                    $userList = $db->getAbsenceReport();
+                    $output = '"Nome";';
+                    $output.= '"Username telegram";';
+                    $output.= '"Email";';
+                    $output.= '"Camera";';
+                    $output.= '"Data partenza";';
+                    $output.= '"Data ritorno";';
+                    $output.="\n";
+
+                    while($row = $userList->fetch_assoc()){
+                        $output.='"'.$row['FullName'].'";';
+
+                        if(empty($row['Username'])){
+                            $output.='"(vuoto)";';
+                        }
+                        else{
+                            $output.='"@'.$row['Username'].'";';
+                        }
+
+                        if(empty($row['Email'])){
+                            $output.='"(vuoto)";';
+                        }
+                        else{
+                            $output.='"'.$row['Email'].'";';
+                        }
+
+                        $output.='"'.$row['Room'].'";';
+                        $output.='"'.$row['LeavingDate'].'";';
+                        $output.='"'.$row['ReturnDate'].'";';
+                        $output.="\n";
+                    }
+
+                    $filePath = FILES_PATH.'export_archive/absence/'.date('Y');
+                    if (!is_dir($filePath)){
+                        mkdir($filePath,0755, true);
+                    }
+
+                    file_put_contents("$filePath/Lista_assenze_".date('d_m_Y').".csv",$output);
+
+                    $from = 'giuliettobot@casadellostudentevillagiulia.it';
+                    $fromName = 'GiuliettoBot';
+                    $subject = _("Lista assenze registrate al ").date('d-m-Y');
+                    $file[0] = "$filePath/Lista_assenze_".date('d_m_Y').".csv";
+
+                    if (!email($user["Email"], $from, $fromName, $subject, '', $file)) {
+                        $bot->sendReplyKeyboard(_("Si è verificato un errore nell'inviare l'email"), $keyboard);
+                    }
+                    else{
+                        $bot->sendReplyKeyboard(_("Email inviata correttamente, controlla la tua casella di posta elettronica per consultare il file"), $keyboard);
+                    }
+
+                }
+                elseif($update["text"] == _("Calendario turni")." \u{1F5D3}"){
+                    if($permission["TurnCalendar"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $typeOfTurnList = $db->getTypeOfTurnList();
+
+                    if(empty($typeOfTurnList)){
+                        $bot->sendMessage("Nessun turno in programma");
+                        exit;
+                    }
+
+                    $_typeOfTurnList = [];
+                    while($row = $typeOfTurnList->fetch_assoc()){
+                        if ($db->getStepNumOfTurn($row['Name']) == 0) {
+                            continue;
+                        }
+
+                        $_typeOfTurnList[] = $row['Name'];
+                    }
+
+                    $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
+
+                    $bot->sendReplyKeyboard(_('Seleziona un turno per visualizzarne il calendario'), $typeOfTurnKeyboard);
+
+                    $file['Type'] = 'ShowCalendar';
+                    file_put_contents(TmpFileUser_path.'selectTypeOfTurn.json', json_encode($file, JSON_PRETTY_PRINT));
+                }
+                elseif($update["text"] == _("Tipi turno")." \u{1F4CB}"){
+                    if($permission["TypeOfTurnList"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $typeOfTurnList = $db->getTypeOfTurnList();
+
+                    if(empty($typeOfTurnList)){
+                        $bot->sendMessage(_('Non risulta registrato nessun turno'));
+                        exit;
+                    }
+
+                    $_typeOfTurnList = [];
+                    while($row = $typeOfTurnList->fetch_assoc()){
+                        $_typeOfTurnList[] = $row['Name'];
+                    }
+
+                    if($permission['NewTypeOfTurn']){
+                        $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
+                    }
+                    else{
+                        $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
+                    }
+
+                    $bot->sendReplyKeyboard(_('Seleziona un turno per visualizzarlo e modificarlo'), $typeOfTurnKeyboard);
+
+                    $file['Type'] = 'Edit';
+                    file_put_contents(TmpFileUser_path.'selectTypeOfTurn.json', json_encode($file, JSON_PRETTY_PRINT));
+                }
+                elseif($update["text"] == _('Crea nuovo turno')){
+                    if($permission["NewTypeOfTurn"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $bot->sendMessageForceReply(_("Scrivi il nome del nuovo turno da creare:"));
+                }
+                elseif($update["text"] == _("Scambia gruppo")." \u{1F503}"){
+                    if($permission["SwapGroup"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $file['Type'] = 'SelectUserForSwapTurn';
+                    file_put_contents(TmpFileUser_path.'selectUser.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                    $userList = [];
+                    $users = $db->getUserList();
+                    while($row = $users->fetch_assoc()){
+                        $_permission = $db->getPermission($row['AccountType']);
+                        if($row['ChatID'] != $chatID and $_permission['PostedInGroup']){
+                            $userList[$row['ChatID']] = $row['FullName'];
+                        }
+                    }
+                    $userKeyboard = createUserKeyboard($userList,[[['text' => "\u{1F3E1}"]]]);
+
+                    $bot->sendReplyKeyboard(_("Con chi vuoi fare a scambio di gruppo?"), $userKeyboard);
+                }
+                elseif($update["text"] == _("Riorganizza Gruppi")." \u{1F500}"){
+                    if($permission["RearrangeGroups"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $bot->sendMessage("No");
+
+                    /*
+                    $otp['Type'] = 'RearrangeGroups';
+                    $otp['OTP'] = rand(1000,9999);
+                    file_put_contents(TmpFileUser_path.'otp.json', json_encode($otp, JSON_PRETTY_PRINT));
+
+                    $bot->sendMessageForceReply(_('Scrivi il seguente codice per confermare:'));
+                    $bot->sendMessage($otp['OTP']);*/
+                }
+                elseif($update["text"] == _("Cambia lingua")." \u{1F524}"){
+                    $langArrayKeyboard[] = [['text' => _("Italiano")]];
+                    $langArrayKeyboard[] = [['text' => "\u{1F3E1}"]];
+                    $langKeyboard = json_encode(['keyboard'=>  $langArrayKeyboard, 'resize_keyboard'=> true] ,JSON_PRETTY_PRINT);
+                    $bot->sendReplyKeyboard(_("Seleziona la lingua"), $langKeyboard);
+                }
+                elseif($update["text"] == _("Italiano")){
+                    if($db->updateLanguage($chatID,'it')){
+                        $bot->sendReplyKeyboard(_("Lingua italiana impostata"), $keyboard);
+                    }
+                    else{
+                        $bot->sendReplyKeyboard(_("Si è verificato un problema nell'impostare la lingua da te richiesta"), $keyboard);
+                    }
+                }
+                elseif($update["text"] == _("Inglese")){
+                    if($db->updateLanguage($chatID,'en')){
+                        $bot->sendReplyKeyboard(_("The English language has been set"), $keyboard);
+                    }
+                    else{
+                        $bot->sendReplyKeyboard(_("Si è verificato un problema nell'impostare la lingua da te richiesta"), $keyboard);
+                    }
+                }
+                elseif(preg_match('/^('._('Nessuna camera').'|(\d+))$/',$update["text"],$words)){//Modifica stanza
+
+                    $selectType = file_get_contents(TmpFileUser_path.'selectRoom.json');
+                    $selectType = json_decode($selectType, true);
+                    $selectType = $selectType['Type'];
+
+                    if($selectType == 'ChangeUserRoom'){
+
+                        $changeRoom = file_get_contents(TmpFileUser_path.'changeRoom.json');
+
+                        if(!$permission["ChangeUserRoom"] or !$changeRoom){
+                            $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                            exit;
+                        }
+
+                        if($words[1] == _('Nessuna camera')){
+                            $words[1] = NULL;
+                        }
+
+                        $changeRoom = json_decode($changeRoom, true);
+                        $_chatID = $changeRoom['ChatID'];
+
+                        $_user = $db->getUser($_chatID);
+
+                        if($_user["Room"] === $words[1]){
+                            if($words[21] == NULL){
+                                $bot->sendMessage($_user['FullName'].' '._("risulta già senza una camera assegnata"));
+                            }
+                            else{
+                                $bot->sendMessage($_user['FullName']._(" è già in camera ").$words[1]);
+                            }
+
+                            exit;
+                        }
+
+                        $users = $db->getUserList(false);
+                        $usersName = [];
+                        while($row = $users->fetch_assoc()){
+                            $usersName[] = $row['FullName'];
+                        }
+                        $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
+
+                        if($db->updateRoom($_chatID,$words[1]) === false){
+                            $bot->sendReplyKeyboard(_("Non è stato possibile assegnare ").$user['FullName']._(" alla camera ").$words[1],$usersKeyboard);
+                        }
+                        else{
+                            $users = $db->getUserList(false);
+                            $usersName = [];
+                            while($row = $users->fetch_assoc()){
+                                $usersName[] = $row['FullName'];
+                            }
+                            $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
+
+                            sendUser($db->getUser($_chatID), $permission, $messageInLineKeyboardPath);
+
+                            $bot->sendReplyKeyboard(_('Camera modificata'), $usersKeyboard);
+
+                            if($_chatID != $chatID){
+                                $bot->setChatID($_chatID);
+                                if(!is_null($words[1])){
+                                    $bot->sendMessage(_("Sei stato assegnato alla camera ").$words[1]);
+                                }
+                            }
+                        }
+
+                        $file['Type'] = 'SelectUserForEdit';
+                        file_put_contents(TmpFileUser_path.'selectUser.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                        unlink(TmpFileUser_path.'changeRoom.json');
+                    }
+                    elseif($selectType == 'SeeUserInRoom'){
+
+                        $roomNum = $words[1];
+                        $users = $db->getUserInRoom($roomNum);
+
+                        $msg = "- - - - - - "._("Utenti in camera").' '.$roomNum."  - - - - - -\n";
+
+                        if($users->num_rows == 0){
+                            $msg .= _('Vuota');
+                        }
+                        else{
+                            while($row = $users->fetch_assoc()){
+                                $msg .= $row['FullName'];
+
+                                if(!empty($row['Username'])){
+                                    $msg .= ' - @'.$row['Username'];
+                                }
+
+                                $msg .= PHP_EOL;
+                            }
+                        }
+
+                        $keyboardAddRoomInGroup = json_encode(['inline_keyboard'=> [[['text' => _('Aggiungi ad un gruppo'), 'callback_data' => "AddRoomInGroup-$roomNum"]]] ],JSON_PRETTY_PRINT);
+
+                        $msgResult = json_decode( $bot->sendReplyKeyboard($msg, $keyboardAddRoomInGroup),true);
+
+                        $messageInLineKeyboard = file_get_contents($messageInLineKeyboardPath);
+                        $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);
+                        $messageInLineKeyboard[$msgResult["result"]["message_id"]] = $msg;
+                        file_put_contents($messageInLineKeyboardPath ,json_encode($messageInLineKeyboard, JSON_PRETTY_PRINT));
+                    }
+                }
+                elseif(preg_match("/^([\w\s]+)( => )([\w\s]*)$/", $update['text'], $words) and array_key_exists($words[1],$db->getGroupList()) and array_key_exists($words[3],$db->getGroupList())){
+                    $swapGroup = file_get_contents(TmpFileUser_path.'swapGroup.json');
+                    $swapGroup = json_decode($swapGroup, true);
+
+                    if($permission["SwapGroup"] == false or !in_array($update['text'], $swapGroup['AllowedSwap'])){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $from = $swapGroup['from'];
+                    $to = $swapGroup['to'];
+
+                    $fromName = $db->getUser($from)['FullName'];
+                    $toName = $db->getUser($to)['FullName'];
+
+                    $fromGroup = $words[1];
+                    $toGroup = $words[3];
+
+                    $bot->sendReplyKeyboard(_('Attendi che ').$toName._(' accetti o rifiuti lo scambio'), $keyboard);
+
+                    $file['From'] = $from;
+                    $file['To'] = $to;
+                    $file['FromGroup'] = $fromGroup;
+                    $file['ToGroup'] = $toGroup;
+                    file_put_contents(TmpFileUser_path.'swapGroupData.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                    $acceptText = _('Accetto');
+                    $refuseText = _('Rifiuto');
+
+                    $keyboardYesNoSwap = "{
+                                        \"inline_keyboard\":
+                                            [
+                                                [
+                                                    { 
+                                                        \"text\":\"$acceptText\",
+                                                        \"callback_data\":\"swapAccepted-$from\"
+                                                    },
+                                                    {
+                                                        \"text\":\"$refuseText\",
+                                                        \"callback_data\":\"swapRefused-$from\"
+                                                    }
+                                                ]
+                                            ]
+                                        }";
+
+                    $bot->setChatID($to);
+                    $bot->sendReplyKeyboard($fromName._(' ti propone di passare da ').$toGroup._(' a ').$fromGroup, $keyboardYesNoSwap);
+
+                    unlink(TmpFileUser_path.'swapGroup.json');
+                }
+                elseif(preg_match("/^(\/broadcast)(\s+)(.*)$/",$update["text"],$words)){
+                    if($permission["BroadcastMsg"] == false){
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $usersList = $db->getUserList();
+                    $_users = [];
+                    while($row = $usersList->fetch_assoc()){
+                        $_users[] = $row['ChatID'];
+                    }
+
+                    sendNotification($_users, $words[3],$bot);
+                }
+                elseif($update["text"] == "/start"){
+                    $bot->sendReplyKeyboard(_("Bentornato, come posso aiutarti?"),$keyboard);
+                }
+                elseif($update["text"] == "/menu" or $update["text"] == "\u{1F3E1}"){
+                    $bot->sendReplyKeyboard("Menù",$keyboard);
+
+                    $files = glob(TmpFileUser_path.'*'); // get all file names
+
+                    foreach($files as $file){ // iterate files
+                        if(is_file($file) and $file !== basename('tmpGuest.json') and $file !== basename('updateGuest.json') ) {
+                            unlink($file); // delete file
+                        }
+                    }
+                }
+                elseif(array_key_exists($update["text"],$db->getGroupList())){
+
+                    $purpose = file_get_contents(TmpFileUser_path.'selectGroup.json');
+                    $purpose = json_decode($purpose, true);
+
+                    $_user = $db->getUser($purpose['ChatID']);
+
+                    if($purpose['Type'] == 'insertUser'){
+
+                        sendUser($_user, $permission, $messageInLineKeyboardPath);
+
+                        if(!$db->insertUserInGroup($purpose['ChatID'], $update['text'])){
+                            $bot->sendReplyKeyboard(_("Non è stato possibile inserire l'utente nel gruppo ").$update['text'],$keyboard);
+                        }
+                        else{
+
+                            $users = $db->getUserList(false);
+                            $usersName = [];
+                            while($row = $users->fetch_assoc()){
+                                $usersName[] = $row['FullName'];
+                            }
+                            $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
+
+                            $bot->sendReplyKeyboard($_user['FullName']._(" inserito nel gruppo ").$update['text'],$usersKeyboard);
+
+                            $bot->setChatID($purpose['ChatID']);
+                            $bot->sendMessage(_("Sei stato inserito nel gruppo ").$update['text']);
+                            $bot->sendMessage(userInGroup($update['text'], $db->getUserInGroup($update['text'])));
+                        }
+
+                        unlink(TmpFileUser_path.'selectGroup.json');
+                    }
+                    elseif($purpose['Type'] == 'deleteUserFromGroup'){
+                        sendUser($_user, $permission, $messageInLineKeyboardPath);
+
+                        if(!$db->removeUserFromGroup($purpose['ChatID'], $update['text'])){
+                            $bot->sendReplyKeyboard(_("Non è stato possibile rimuovere l'utente dal gruppo ").$update['text'],$keyboard);
+                        }
+                        else{
+
+                            $users = $db->getUserList(false);
+                            $usersName = [];
+                            while($row = $users->fetch_assoc()){
+                                $usersName[] = $row['FullName'];
+                            }
+                            $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
+                            $bot->sendReplyKeyboard($_user['FullName']._(" rimosso dal gruppo ").$update['text'],$usersKeyboard);
+
+                            $bot->setChatID($purpose['ChatID']);
+                            $bot->sendMessage(_("Sei stato rimosso dal gruppo ").$update['text']);
+                        }
+
+                        unlink(TmpFileUser_path.'insetDeleteGroupUser.json');
+                    }
+                    elseif($purpose['Type'] == 'insertRoom'){
+                        $userInRoom = $db->getUserInRoom($purpose['Room']);
+
+                        $myChatID = $chatID;
+
+                        while($row = $userInRoom->fetch_assoc()){
+
+                            if(!in_array($row, $db->getUserInGroup($update['text']))){
+                                if(!$db->insertUserInGroup($row['ChatID'], $update['text'])){
+                                    $bot->sendMessage(_("Non è stato possibile inserire").' '.$row['FullName'].' '._("nel gruppo ").$update['text']);
+                                }
+                                else{
+                                    $bot->setChatID($row['ChatID']);
+                                    $bot->sendMessage(_("Sei stato inserito nel gruppo ").$update['text']);
+                                }
+                            }
+                        }
+
+                        $rooms = $db->query('SELECT R.Num, R.Beds AS TotalBeds, COUNT(U.ChatID) AS OccupiedBeds FROM Room R LEFT JOIN User U ON R.Num = U.Room AND U.Enabled IS TRUE GROUP BY R.Num;');
+
+                        $_rooms = [];
+                        while($row = $rooms->fetch_assoc()){
+                            $_rooms[] = $row['Num'];
+                        }
+
+                        if($permission["NewRoom"]){
+                            $roomsKeyboard = createUserKeyboard($_rooms,[[['text' => _('Aggiungi nuova camera')]], [['text' => "\u{1F3E1}"]]]);
+                        }
+                        else{
+                            $roomsKeyboard = createUserKeyboard($_rooms,[[['text' => "\u{1F3E1}"]]]);
+                        }
+
+                        $bot->setChatID($myChatID);
+                        $userInGroup = $db->getUserInGroup($update['text']);
+                        $bot->sendReplyKeyboard(userInGroup($update['text'], $userInGroup), $roomsKeyboard);
+
+                        unlink(TmpFileUser_path.'selectGroup.json');
+                    }
+                    else{
+                        $userList = $db->getUserInGroup($update["text"]);
+                        $bot->sendMessage(userInGroup($update["text"],$userList));
+                    }
+                }
+                elseif($db->getUser($db->getChatID($update["text"])) != false){
+
+                    $selectType = file_get_contents(TmpFileUser_path.'selectUser.json');
+                    $selectType = json_decode($selectType, true);
+
+                    if($selectType['Type'] == 'SelectUserForEdit'){
+
+                        sendUser($db->getUser($db->getChatID($update['text'])), $permission, $messageInLineKeyboardPath);
+
+                    }
+                    elseif($selectType['Type'] == 'SelectUserForSwapTurn'){
+                        if($permission["SwapGroup"] == false){
+                            $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                            exit;
+                        }
+
+                        $swapGroup['from'] = $chatID;
+                        $swapGroup['to'] = $db->getChatID($update["text"]);
+
+
+                        $fromGroups = $db->getGroupsByUser($chatID);
+                        $toGroups = $db->getGroupsByUser($db->getChatID($update['text']));
+
+                        $buttonText = [];
+                        foreach($fromGroups as $key => $value){
+                            if(!in_array($key, array_keys($toGroups))){
+                                foreach($toGroups as $key1 => $value1){
+                                    if( ($value == $value1) and !in_array($key1, array_keys($fromGroups)) ){
+                                        $buttonText[] = $key.' => '.$key1;
+                                    }
+                                }
+                            }
+                        }
+
+                        if(empty($buttonText)){
+                            $bot->sendMessage(_('Non è disponibile alcun gruppo per effettuare lo scambio'));
+                        }
+                        else{
+                            $swapGroup['AllowedSwap'] = $buttonText;
+                            file_put_contents(TmpFileUser_path.'swapGroup.json', json_encode($swapGroup, JSON_PRETTY_PRINT));
+
+                            $swapKeyboard = createUserKeyboard($buttonText,[[['text' => "\u{1F3E1}"]]]);
+                            $bot->sendReplyKeyboard(_('Scegli lo scambio da fare:'), $swapKeyboard);
+                        }
+                    }
+                    else{
+                        $bot->sendMessage('Fanculo sandro');
+                    }
+
+                }
+                elseif($db->getTypeOfTurn($update["text"]) != false){
+
+                    $file = file_get_contents(TmpFileUser_path.'selectTypeOfTurn.json');
+                    $file = json_decode($file, true);
+
+                    if($file['Type'] == 'Show'){
+                        $typeOfTurn = $db->getTypeOfTurn($update['text']);
+
+                        $frequency = $typeOfTurn["Frequency"];
+                        $lastExecution = $typeOfTurn["LastExecution"];
+                        $firstExecution = $typeOfTurn["FirstExecution"];
+                        $turnName = $typeOfTurn["Name"];
+
+                        if(is_null($lastExecution)){
+                            $msg = "- - - - - -  "._("Turno")." $turnName  - - - - - - \n";
+                            $msg.= _('Il turno inizierà il').' '.strftime('%e %h %Y', strtotime($firstExecution)).PHP_EOL._('con il gruppo').' '.$db->getGroupWillDoTheNextTurn($turnName)["Squad"].PHP_EOL;
+                        }
+                        else{
+                            $remainingDays = 0;
+                            if($lastExecution == date("Y-m-d")){
+                                $passedDays = $frequency;
+                                $users = $db->getUsersOfTurnPerformed(date("Y-m-d",strtotime("$lastExecution - $frequency days")),$turnName)["Users"];
+                            }
+                            else{
+                                $passedDays = date_diff(new DateTime($lastExecution),new DateTime(date("Y-m-d")))->days;
+                                $remainingDays = date_diff(new DateTime(date("Y-m-d")), new DateTime(date("Y-m-d", strtotime("$lastExecution + $frequency days"))))->days;
+                                $users = $db->getUsersOfTurnPerformed($lastExecution,$turnName)["Users"];
+                            }
+
+                            $msg = "- - - - - -  "._("Turno")." $turnName  - - - - - -\n";
+
+                            if($passedDays == 1){
+                                if(empty($users)){
+                                    $msg.= _("Ieri: Non presente nello storico").PHP_EOL;
+                                }
+                                else{
+                                    $msg.= _("Ieri: ").$users.PHP_EOL;
+                                }
+                            }else{
+                                if(empty($users)){
+                                    $msg.= $passedDays._(" giorni fà: Non presente nello storico").PHP_EOL;
+                                }
+                                else{
+                                    $msg.= $passedDays._(" giorni fà: ").$users.PHP_EOL;
+                                }
+                            }
+
+                            if($remainingDays == 0){
+                                $msg.= _("Oggi: ").$db->getGroupWillDoTheNextTurn($turnName)["Squad"].PHP_EOL;
+                            }else{
+                                $msg.= _("Tra")." $remainingDays "._("giorni: ").$db->getGroupWillDoTheNextTurn($turnName)["Squad"].PHP_EOL;
+                            }
+
+                            $myGroups = $db->getGroupsByUser($chatID);
+                            $_myGroups = [];
+                            foreach($myGroups as $key => $value){
+                                if(strpos( $value, $turnName) !== false){
+                                    $_myGroups[] = $key;
+                                }
+                            }
+
+                            for($i=1; $i<$db->getStepNumOfTurn($turnName); $i++){
+                                if(in_array($db->getGroupWillDoTheNextTurn($turnName, $i)['Squad'], $_myGroups)){
+                                    $msg .= _("Tuo prossimo: ").strftime('%e %h %Y', strtotime("+$i days")).PHP_EOL;
+                                    break;
+                                }
+                            }
+                        }
+
+                        $msg .= "- - - - - - - - - - - - - - - - - - - - - - - -\n";
+                        $bot->sendMessage($msg);
+
+                    }
+                    elseif($file['Type'] == 'Edit'){
+                        sendMessageEditTypeOfTurn($db->getTypeOfTurn($update["text"]), $permission, $messageInLineKeyboardPath);
+                    }
+                    elseif($file['Type'] == 'ShowCalendar'){
+                        $typeOfTurn = $db->getTypeOfTurn($update['text']);
+
+                        $frequency = $typeOfTurn["Frequency"];
+                        $lastExecution = $typeOfTurn["LastExecution"];
+                        $firstExecution = $typeOfTurn["FirstExecution"];
+                        $turnName = $typeOfTurn["Name"];
+
+                        $msg = "- - - - - -  "._("Turno")." $turnName  - - - - - -\n";
+
+                        for($i=0; $i<$db->getStepNumOfTurn($turnName); $i++){
+
+                            $days = $i*$frequency;
+
+                            if(is_null($lastExecution)){
+                                $days += date_diff(new DateTime($firstExecution),new DateTime(date("Y-m-d")))->days;
+                            }
+                            else{
+                                $days += date_diff(new DateTime($lastExecution),new DateTime(date("Y-m-d")))->days +1;
+                            }
+
+                            $msg .= strftime('%e %h %Y', strtotime("+$days days")).': '.$db->getGroupWillDoTheNextTurn($turnName,$i)["Squad"].PHP_EOL;
+                        }
+
+                        $bot->sendMessage($msg);
+
+                        $bot->sendMessage(_("Nelle date successive i turni verranno eseguiti ciclicamente dai gruppi nell'ordine mostrato"));
+                    }
+                    else{
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+
+                    }
+                }
+                else {
+                    $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
+
+                    $files = glob(TmpFileUser_path . '*'); // get all file names
+                    foreach ($files as $file) { // iterate files
+                        if (is_file($file) and $file !== 'tmpGuest.json') {
+                            unlink($file); // delete file
+                        }
+                    }
                 }
             }
         }
