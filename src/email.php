@@ -1,6 +1,7 @@
 <?php 
 
-function email($to, $from, $fromName, $subject, $emailText, $files){
+function email($to, $from, $fromName, $subject, $emailText, $files): bool
+{
 
     // Header for sender info
     $headers = "From: $fromName"." <".$from.">";
