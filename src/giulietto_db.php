@@ -13,7 +13,14 @@ require_once 'log.php';
 class GiuliettoDB
 {
 
+    /**
+     * @var mysqli
+     */
     private $_conn;
+
+    /**
+     * @var Log
+     */
     private $_log;
 
 
@@ -409,7 +416,7 @@ class GiuliettoDB
 
             $query = "  SELECT Name AS AccountType
                         FROM AccountType
-                        WHERE Password = SHA2('?', 224);
+                        WHERE Password = SHA2(?, 224);
                     ";
             $stmt = $this->_conn->prepare($query);
             $stmt->bind_param('s',$password);
@@ -419,7 +426,6 @@ class GiuliettoDB
 
             $result = $result->fetch_assoc();
             return $result["AccountType"];
-
         }
         catch (Exception $e){
             $this->_log->append($e->getCode() . " " . $e->getMessage() . "\n" . $e->getTraceAsString(), "error");
