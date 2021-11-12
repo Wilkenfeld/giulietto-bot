@@ -409,7 +409,7 @@ class GiuliettoDB
 
             $query = "  SELECT Name AS AccountType
                         FROM AccountType
-                        WHERE Password = PASSWORD(?);
+                        WHERE Password = SHA2('?', 224);
                     ";
             $stmt = $this->_conn->prepare($query);
             $stmt->bind_param('s',$password);
