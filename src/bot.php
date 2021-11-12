@@ -2181,14 +2181,13 @@
 
                         $_user = $db->getUser($_chatID);
 
-                        if($_user["Room"] === $words[1]){
-                            if($words[21] == NULL){
+                        if($_user["Room"] == $words[1]){
+                            if($words[1] == NULL){
                                 $bot->sendMessage($_user['FullName'].' '._("risulta già senza una camera assegnata"));
                             }
                             else{
                                 $bot->sendMessage($_user['FullName']._(" è già in camera ").$words[1]);
                             }
-
                             exit;
                         }
 
@@ -2203,6 +2202,9 @@
                             $bot->sendReplyKeyboard(_("Non è stato possibile assegnare ").$user['FullName']._(" alla camera ").$words[1],$usersKeyboard);
                         }
                         else{
+
+                            $bot->sendReplyKeyboard(_('Camera modificata'), $usersKeyboard);
+
                             $users = $db->getUserList(false);
                             $usersName = [];
                             while($row = $users->fetch_assoc()){
@@ -2211,8 +2213,6 @@
                             $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
 
                             sendUser($db->getUser($_chatID), $permission, $messageInLineKeyboardPath);
-
-                            $bot->sendReplyKeyboard(_('Camera modificata'), $usersKeyboard);
 
                             if($_chatID != $chatID){
                                 $bot->setChatID($_chatID);
