@@ -2471,9 +2471,6 @@
                             $bot->sendReplyKeyboard(_('Scegli lo scambio da fare:'), $swapKeyboard);
                         }
                     }
-                    else{
-                        $bot->sendMessage('Fanculo Sandro');
-                    }
 
                 }
                 elseif($db->getTypeOfTurn($update["text"]) != false){
