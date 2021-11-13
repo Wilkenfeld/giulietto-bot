@@ -1382,4 +1382,23 @@ class GiuliettoDB
         }
     }
 
+//Easter Egg
+
+    public function getEasterEgg($msg){
+        try{
+            $query = "SELECT * FROM EasterEgg E WHERE E.Msg = ?";
+            $stmt = $this->_conn->prepare($query);
+            $stmt->bind_param('s',$typeofTurn);
+            $stmt->execute();
+
+            $result = $stmt->get_result();
+
+            return $result->fetch_assoc();
+        }
+        catch (Exception $e){
+            $this->_log->append($e->getCode() . " " . $e->getMessage() . "\n" . $e->getTraceAsString(), "error");
+            return false;
+        }
+    }
+
 }
