@@ -2471,6 +2471,16 @@
                             $bot->sendReplyKeyboard(_('Scegli lo scambio da fare:'), $swapKeyboard);
                         }
                     }
+                    else{
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
+
+                        $files = glob(TmpFileUser_path . '*'); // get all file names
+                        foreach ($files as $file) { // iterate files
+                            if (is_file($file) and $file !== 'tmpGuest.json') {
+                                unlink($file); // delete file
+                            }
+                        }
+                    }
 
                 }
                 elseif($db->getTypeOfTurn($update["text"]) != false){
@@ -2578,8 +2588,14 @@
                         $bot->sendMessage(_("Nelle date successive i turni verranno eseguiti ciclicamente dai gruppi nell'ordine mostrato"));
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
 
+                        $files = glob(TmpFileUser_path . '*'); // get all file names
+                        foreach ($files as $file) { // iterate files
+                            if (is_file($file) and $file !== 'tmpGuest.json') {
+                                unlink($file); // delete file
+                            }
+                        }
                     }
                 }
                 else {
