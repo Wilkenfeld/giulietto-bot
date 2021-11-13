@@ -2599,7 +2599,17 @@
                     }
                 }
                 else {
-                    $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
+
+                    //Easter egg
+                    if($update['text'] == 'Sandro'){
+                        $bot->sendMessage('Fanculo Sandro');
+                    }
+                    elseif($update['text'] == 'Alex 11 11'){
+                        $bot->sendMessage('Per stupidità è entrato per ignoranza uscirà');
+                    }
+                    else{
+                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
+                    }
 
                     $files = glob(TmpFileUser_path . '*'); // get all file names
                     foreach ($files as $file) { // iterate files
@@ -2607,14 +2617,6 @@
                             unlink($file); // delete file
                         }
                     }
-                }
-
-                //Easter egg
-                if($update['text'] == 'Sandro'){
-                    $bot->sendMessage('Fanculo Sandro');
-                }
-                elseif($update['text'] == 'Alex 11 11'){
-                    $bot->sendMessage('Per stupidità è entrato per ignoranza uscirà');
                 }
             }
         }
