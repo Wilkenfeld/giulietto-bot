@@ -2595,6 +2595,14 @@
                         }
                     }
                 }
+
+                //Easter egg
+                if($update['text'] == 'Sandro'){
+                    $bot->sendMessage('Fanculo Sandro');
+                }
+                elseif($update['text'] == 'Alex 11 11'){
+                    $bot->sendMessage('Per stupidità è entrato per ignoranza uscirà');
+                }
             }
         }
     }
