@@ -111,10 +111,6 @@
 
         $date = $bot->selectDate();
 
-        if(date('dm', $date) == '1109'){
-            $bot->sendMessage('Iraq airlines');
-        }
-
         $path = TmpFileUser_path."calendar.json";
         $calendar = file_get_contents($path);
         $calendar = json_decode($calendar,true);
@@ -154,10 +150,6 @@
         $calendar = json_decode($calendar,true);
 
         $date = $bot->selectDate();
-
-        if(date('dm', $date) == '1109'){
-            $bot->sendMessage('Iraq airlines');
-        }
 
         //Se l'inserimento della data è stato annullato
         if ($date === false) {
@@ -482,7 +474,7 @@
                     $ospite['UsersWhoHaveAccepted']++;
 
                     if($ospite['UsersWhoHaveAccepted'] == $ospite['UserInRoom']){
-                        if(guestInput($fileName,$db, $bot) === true){
+                        if(guestInput($fileName) === true){
                             $bot->setChatID($words[3]);
                             $bot->sendMessage(_("Ospite confermato e registrato"));
                         }
@@ -996,7 +988,7 @@
                         exit;
                     }
 
-                    //Prende l'ultimo elemento dell'array associativo che contiene l'immagine alla risoluzione più alta
+                    //Prende l'ultimo elemento dell' array associativo che contiene l'immagine alla risoluzione più alta
                     $text = end($update["photo"]);
                     checkNewGuestInput($text["file_id"], $chatID, $bot, $db, $keyboard);
                 }
@@ -1007,7 +999,7 @@
                         exit;
                     }
 
-                    //Prende l'ultimo elemento dell'array associativo che contiene l'immagine alla risoluzione più alta
+                    //Prende l'ultimo elemento dell' array associativo che contiene l'immagine alla risoluzione più alta
                     $text = end($update["photo"]);
                     checkNewGuestInput($text["file_id"], $chatID, $bot, $db, $keyboard);
                 }
@@ -2480,7 +2472,7 @@
                         }
                     }
                     else{
-                        $bot->sendMessage('Fanculo sandro');
+                        $bot->sendMessage('Fanculo Sandro');
                     }
 
                 }
@@ -2616,7 +2608,7 @@
  * @param $db GiuliettoDB
  * @param $keyboard string
  */
-function checkNewGuestInput($text, $chatID, $bot, $db, $keyboard){
+function checkNewGuestInput(string $text, int $chatID, TelegramBot  $bot, GiuliettoDB $db, string $keyboard){
 
     //file temporaneo contenente i dati dell'ospite da inserire;
     $fileName = TmpFileUser_path."tmpGuest.json";
@@ -2724,7 +2716,7 @@ function checkNewGuestInput($text, $chatID, $bot, $db, $keyboard){
                 if(empty($guest)){
                     //Se l'utente non ha un compagno di stanza la registrazione viene eseguita direttamente senza richiedere la conferma al suo compagno
                     if($roommateList->num_rows == 0){
-                        if(guestInput($fileName,$db, $bot) === true){
+                        if(guestInput($fileName) === true){
                             $bot->setChatID($chatID);
                             $bot->sendReplyKeyboard(_("Ospite confermato e registrato"), $keyboard);
                         }
@@ -2785,11 +2777,10 @@ function checkNewGuestInput($text, $chatID, $bot, $db, $keyboard){
     }
 }
 
-/**
- * @param $db GiuliettoDB
- * @param $bot TelegramBot
- */
-function guestInput($guest_file, $db, $bot){
+function guestInput($guest_file){
+
+    global $bot;
+    global $db;
 
     //Lettura dei dati dell'ospite dal file;
     $ospite = file_get_contents($guest_file);
@@ -2903,7 +2894,8 @@ function createUserKeyboard($buttonTextList, $end = [], $oneTimeKeyboard = false
     return json_encode(['keyboard'=> $keyboard, 'resize_keyboard'=> true, 'one_time_keyboard'=>$oneTimeKeyboard],JSON_PRETTY_PRINT);
 }
 
-function userInGroup($groupName, $userInGroup){
+function userInGroup($groupName, $userInGroup): string
+{
     $msg = "- - - - - - - - - - ".$groupName." - - - - - - - - - - \n";
 
     if(count($userInGroup) == 0){
@@ -2928,8 +2920,8 @@ function userInGroup($groupName, $userInGroup){
  * @param $permission array The associative array of the account permission
  * @return array Return the reply keyboard to send or false on failure
  */
-function createPermissionKeyboard($permission, $KeyText = null){
-
+function createPermissionKeyboard(array $permission, $KeyText = null): array
+{
     $keyboard = [];
 
     end($permission);
