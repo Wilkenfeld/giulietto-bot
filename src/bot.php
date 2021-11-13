@@ -2604,8 +2604,11 @@
                     if($update['text'] == 'Sandro'){
                         $bot->sendMessage('Fanculo Sandro');
                     }
-                    elseif($update['text'] == 'Alex 11 11'){
+                    elseif($update['text'] == 'Alex 11:11'){
                         $bot->sendMessage('Per stupidità è entrato per ignoranza uscirà');
+                    }
+                    elseif($update['text'] == 'Ressa 13:11'){
+                        $bot->sendMessage('Questo è il mio piatto offerto in incastro per voi');
                     }
                     else{
                         $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
