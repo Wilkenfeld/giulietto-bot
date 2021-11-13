@@ -2610,6 +2610,9 @@
                     elseif($update['text'] == 'Ressa 13:11'){
                         $bot->sendMessage('Questo è il mio piatto offerto in incastro per voi');
                     }
+                    elseif($update['text'] == 'Ressa 2:04'){
+                        $bot->sendMessage('Non immortalarmi non posso essere immortalato');
+                    }
                     else{
                         $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
                     }
