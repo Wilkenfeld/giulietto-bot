@@ -206,11 +206,11 @@ class GiuliettoDB
      * Update the room of the user
      *
      * @param int $chatID The identifier of chat, if the user is a private account is equal to user id
-     * @param int $newAccountType The new account type of the user
+     * @param string $newAccountType The new account type of the user
      *
      * @return bool Return true or false on failure
      */
-    public function updateAccountType(int $chatID, int $newAccountType): bool
+    public function updateAccountType(int $chatID, string $newAccountType): bool
     {
         try{
             $query = "UPDATE User SET AccountType = ? WHERE ChatID = ?";
@@ -303,7 +303,7 @@ class GiuliettoDB
      *
      * @param string $name The name of the user
      *
-     * @return int|false The chatID of the user or false on failure
+     * @return int|null|false The chatID of the user or false on failure
      */
     public function getChatID(string $name){
         try{
@@ -355,10 +355,10 @@ class GiuliettoDB
     }
 
     /**
-     * @param $chatID
+     * @param $chatID int
      * @return false|mysqli_result
      */
-    public function getRoommateList($chatID){
+    public function getRoommateList(int $chatID){
         try{
             $query = "SELECT * FROM User U WHERE U.ChatID <> ? AND U.Enabled IS TRUE AND U.Room = (SELECT U1.Room FROM User U1 WHERE U1.ChatID = ?);";
             $stmt = $this->_conn->prepare($query);
@@ -374,10 +374,10 @@ class GiuliettoDB
     }
 
     /**
-     * @param $notification
+     * @param $notification string
      * @return false|mysqli_result
      */
-    public function getAllUsersForNotification($notification){
+    public function getAllUsersForNotification(string $notification){
         try{
             $query = "SELECT U.* FROM User U INNER JOIN AccountType A ON U.AccountType = A.Name INNER JOIN Notification N ON A.Notification = N.Name WHERE N.$notification IS TRUE AND U.Enabled IS TRUE;";
             $stmt = $this->_conn->prepare($query);
@@ -393,10 +393,10 @@ class GiuliettoDB
     }
 
     /**
-     * @param $room
+     * @param $room int
      * @return false|mysqli_result
      */
-    public function getUserInRoom($room){
+    public function getUserInRoom(int $room){
         try{
             $query = "SELECT * FROM User U WHERE U.Room = ? AND U.Enabled IS TRUE;";
             $stmt = $this->_conn->prepare($query);
@@ -602,12 +602,12 @@ class GiuliettoDB
     }
 
     /**
-     * @param $chatID
-     * @param $leavingDate
-     * @param $returnDate
+     * @param int $chatID
+     * @param string $leavingDate
+     * @param string $returnDate
      * @return array|false|null
      */
-    public function getAbsence($chatID, $leavingDate, $returnDate){
+    public function getAbsence(int $chatID, string $leavingDate, string $returnDate){
         try{
             $query = "SELECT * FROM Absence A WHERE A.User = ? AND A.LeavingDate = ? AND A.ReturnDate = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -654,10 +654,12 @@ class GiuliettoDB
      * @param int $chatID The identifier of chat, if the user is a private account is equal to user id
      * @param string $leavingDate The date when the use leave the house, the format is Y-m-d
      * @param string $returnDate The date when the use return to the house, the format is Y-m-d
+     * @param string $newLeavingDate
+     * @param  string $newReturnDate
      *
      * @return bool Return true or false on failure
      */
-    public function updateAbsence(int $chatID, string $leavingDate, string $returnDate, $newLeavingDate, $newReturnDate): bool
+    public function updateAbsence(int $chatID, string $leavingDate, string $returnDate, string $newLeavingDate, string $newReturnDate): bool
     {
         try{
             $query = "UPDATE Absence A SET A.LeavingDate = ?, A.ReturnDate = ? WHERE A.User = ? AND A.LeavingDate = ? AND A.ReturnDate = ?; ";
@@ -705,10 +707,11 @@ class GiuliettoDB
      * @param $checkInDate string Guest arrival date
      * @param $leavingDate string Guest leaving date
      * @param $room int Room where the guest is staying
+     * @param string $registrationDate
      *
      * @return bool Return true or false on failure
      */
-    public function insertGuest(int $chatID, string $guestName, string $checkInDate, string $leavingDate, int $room, $registrationDate): bool
+    public function insertGuest(int $chatID, string $guestName, string $checkInDate, string $leavingDate, int $room, string $registrationDate): bool
     {
         try{
             $query = "INSERT INTO `Guest`(`User`, `Name`, `CheckInDate`, `LeavingDate`, `Room`, `RegistrationDate`) VALUES (?,?,?,?,?,?)";
@@ -807,9 +810,10 @@ class GiuliettoDB
      *
      * @param $checkInDate string The first date of the interval whose guests you want to view, the date format is Y-m-d
      * @param $leavingDate string The second date of the interval whose guests you want to view, the date format is Y-m-d
+     * @param int|null $user
      * @return mysqli_result|false Return a result-set or false on failure
      */
-    public function getGuestList(string $checkInDate, string $leavingDate, $user = NULL){
+    public function getGuestList(string $checkInDate, string $leavingDate, ?int $user = NULL){
         try{
 
             if(is_null($user)){
@@ -1460,7 +1464,7 @@ class GiuliettoDB
      */
     public function getQuoteByMsg(string $msg){
         try{
-            $query = "SELECT * FROM EasterEgg E WHERE E.Msg = ?;";
+            $query = "SELECT * FROM Quote E WHERE E.Msg = ?;";
             $stmt = $this->_conn->prepare($query);
             $stmt->bind_param('s',$msg);
             $stmt->execute();
