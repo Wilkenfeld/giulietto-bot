@@ -707,16 +707,15 @@ class GiuliettoDB
      * @param $checkInDate string Guest arrival date
      * @param $leavingDate string Guest leaving date
      * @param $room int Room where the guest is staying
-     * @param string $registrationDate
      *
      * @return bool Return true or false on failure
      */
-    public function insertGuest(int $chatID, string $guestName, string $checkInDate, string $leavingDate, int $room, string $registrationDate): bool
+    public function insertGuest(int $chatID, string $guestName, string $checkInDate, string $leavingDate, int $room): bool
     {
         try{
-            $query = "INSERT INTO `Guest`(`User`, `Name`, `CheckInDate`, `LeavingDate`, `Room`, `RegistrationDate`) VALUES (?,?,?,?,?,?)";
+            $query = "INSERT INTO `Guest`(`User`, `Name`, `CheckInDate`, `LeavingDate`, `Room`, `RegistrationDate`) VALUES (?,?,?,?,?,NOW())";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('isssis', $chatID, $guestName, $checkInDate, $leavingDate, $room, $registrationDate);
+            $stmt->bind_param('isssi', $chatID, $guestName, $checkInDate, $leavingDate, $room);
 
             return $stmt->execute();
         }
