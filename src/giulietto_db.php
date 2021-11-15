@@ -29,7 +29,7 @@ class GiuliettoDB
      *
      * @param mysqli $mysqlConn Mysqli object for db connection
      */
-    public function __construct($mysqlConn){
+    public function __construct(mysqli $mysqlConn){
         $this->_conn = $mysqlConn;
     }
 
@@ -38,7 +38,7 @@ class GiuliettoDB
      *
      * @param string $logFile File to save log
      */
-    public function setLogFile($logFile){
+    public function setLogFile(string $logFile){
         $this->_log = new Log($logFile);
     }
 
@@ -64,10 +64,12 @@ class GiuliettoDB
      * @param string $room The room where the private user bed
      * @param string $type The type of user, it can be private, group, supergroup or channel
      * @param string $accountType The type of account
-     * 
+     * @param string $language
+     *
      * @return true|false Return true or false on failure
      */
-    public function insertUser($chatID, $fullName, $username, $room, $type, $accountType, $language){
+    public function insertUser(int $chatID, string $fullName, string $username, string $room, string $type, string $accountType, string $language): bool
+    {
         try{
             $query = "INSERT INTO `User`(`ChatID`, `FullName`, `Username`, `Type`, `InscriptionDate`, `Room`, `Enabled`, `AccountType`, `Language`) VALUES (?,?,?,?,NOW(),?,TRUE,?,?)";
             $stmt = $this->_conn->prepare($query);
@@ -87,7 +89,8 @@ class GiuliettoDB
      * @param int $chatID The identifier of chat, if the user is a private account is equal to user id
      * @return bool Return true or false on failure
      */
-    public function deleteUser($chatID){
+    public function deleteUser(int $chatID): bool
+    {
         try{
             $query = "DELETE FROM User where ChatID = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -110,7 +113,8 @@ class GiuliettoDB
      * 
      * @return bool Return true or false on failure
      */
-    public function updateName($chatID, $newName){
+    public function updateName(int $chatID, string $newName): bool
+    {
         try{
             $query = "UPDATE User SET FullName = ? WHERE ChatID = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -132,7 +136,8 @@ class GiuliettoDB
      * 
      * @return bool Return true or false on failure
      */
-    public function updateUsername($chatID, $newUsername){
+    public function updateUsername(int $chatID, string $newUsername): bool
+    {
         try{
             $query = "UPDATE User SET Username = ? WHERE ChatID = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -154,7 +159,8 @@ class GiuliettoDB
      * 
      * @return bool Return true or false on failure
      */
-    public function updateEmail($chatID, $newEmail){
+    public function updateEmail(int $chatID, string $newEmail): bool
+    {
 
         if(!filter_var($newEmail, FILTER_VALIDATE_EMAIL)){
             return false;
@@ -181,7 +187,8 @@ class GiuliettoDB
      * 
      * @return bool Return true or false on failure
      */
-    public function updateRoom($chatID, $newRoom){
+    public function updateRoom(int $chatID, int $newRoom): bool
+    {
         try{
             $query = "UPDATE User SET Room = ? WHERE ChatID = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -203,7 +210,8 @@ class GiuliettoDB
      *
      * @return bool Return true or false on failure
      */
-    public function updateAccountType($chatID, $newAccountType){
+    public function updateAccountType(int $chatID, int $newAccountType): bool
+    {
         try{
             $query = "UPDATE User SET AccountType = ? WHERE ChatID = ?";
             $stmt = $this->_conn->prepare($query);
@@ -225,7 +233,8 @@ class GiuliettoDB
      *
      * @return bool Return true or false on failure
      */
-    public function updateLanguage($chatID, $language){
+    public function updateLanguage(int $chatID, string $language): bool
+    {
         try{
             $query = "UPDATE User SET Language = ? WHERE ChatID = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -246,7 +255,8 @@ class GiuliettoDB
      *
      * @return bool true or false on failure
      */
-    public function changeUserState($chatID){
+    public function changeUserState(int $chatID): bool
+    {
         try{
             $query = "
                         UPDATE User 
@@ -271,7 +281,7 @@ class GiuliettoDB
      *
      * @return array|false An associative array with the user info or false on failure
      */
-    public function getUser($chatID){
+    public function getUser(int $chatID){
         try{
             $query = "SELECT * FROM User U WHERE U.ChatID = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -295,7 +305,7 @@ class GiuliettoDB
      *
      * @return int|false The chatID of the user or false on failure
      */
-    public function getChatID($name){
+    public function getChatID(string $name){
         try{
 
             $query = "SELECT U.ChatID FROM User U WHERE U.FullName = ?";
@@ -322,7 +332,7 @@ class GiuliettoDB
      *
      * @return mysqli_result|false Return a result-set or false on failure
      */
-    public function getUserList($enabled = true){
+    public function getUserList(bool $enabled = true){
         try{
             if($enabled){
                 $query = "SELECT * FROM User WHERE Enabled IS TRUE ORDER BY Room;";
@@ -411,7 +421,7 @@ class GiuliettoDB
      *
      * @return string|false the name of the account type or false on failure
      */
-    public function getAccountType($password){
+    public function getAccountType(string $password){
         try{
 
             $query = "  SELECT Name AS AccountType
@@ -440,7 +450,7 @@ class GiuliettoDB
      *
      * @return array|false The array of the permission or false on failure
      */
-    public function getPermission($accountType){
+    public function getPermission(string $accountType){
         try{
 
             $query = "
@@ -475,7 +485,7 @@ class GiuliettoDB
      *
      * @return array|false The array of the notification or false on failure
      */
-    public function getNotification($accountType){
+    public function getNotification(string $accountType){
         try{
             $query = "
                         SELECT * 
@@ -511,7 +521,7 @@ class GiuliettoDB
      * @param $date string The date whose absences you want to view, the format of the date must be Y-m-d
      * @return mysqli_result|false Return a result-set or false on failure
      */
-    public function getAbsentsList($date){
+    public function getAbsentsList(string $date){
         try{
             $query = "SELECT U.ChatID, U.FullName, U.Username, U.Room, A.LeavingDate, A.ReturnDate FROM User U INNER JOIN Absence A ON U.ChatID = A.User WHERE ? BETWEEN A.LeavingDate AND A.ReturnDate;";
             $stmt = $this->_conn->prepare($query);
@@ -533,7 +543,7 @@ class GiuliettoDB
      * @param $date string The date whose absences you want to view, the format of the date must be Y-m-d
      * @return mysqli_result|false Return a result-set or false on failure
      */
-    public function getIncomingRoomer($date){
+    public function getIncomingRoomer(string $date){
         try{
             $query = "SELECT * FROM Absence A INNER JOIN User U ON A.User = U.ChatID WHERE A.ReturnDate = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -575,7 +585,7 @@ class GiuliettoDB
      * @param $chatID int The user chatID whose absence you want to view
      * @return mysqli_result|false Return a result-set or false on failure
      */
-    public function getMyAbsence($chatID){
+    public function getMyAbsence(int $chatID){
         try{
             $query = "Select * FROM Absence A WHERE A.User = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -623,7 +633,8 @@ class GiuliettoDB
      *
      * @return bool Return true or false on failure
      */
-    public function insertAbsence($chatID, $leavingDate, $returnDate){
+    public function insertAbsence(int $chatID, string $leavingDate, string $returnDate): bool
+    {
         try{
             $query = "INSERT INTO Absence (User, LeavingDate, ReturnDate) VALUES (?,?,?);";
             $stmt = $this->_conn->prepare($query);
@@ -646,7 +657,8 @@ class GiuliettoDB
      *
      * @return bool Return true or false on failure
      */
-    public function updateAbsence($chatID, $leavingDate, $returnDate, $newLeavingDate, $newReturnDate){
+    public function updateAbsence(int $chatID, string $leavingDate, string $returnDate, $newLeavingDate, $newReturnDate): bool
+    {
         try{
             $query = "UPDATE Absence A SET A.LeavingDate = ?, A.ReturnDate = ? WHERE A.User = ? AND A.LeavingDate = ? AND A.ReturnDate = ?; ";
             $stmt = $this->_conn->prepare($query);
@@ -661,12 +673,13 @@ class GiuliettoDB
     }
 
     /**
-     * @param $chatID
-     * @param $leavingDate
-     * @param $returnDate
+     * @param $chatID int
+     * @param $leavingDate string
+     * @param $returnDate string
      * @return bool
      */
-    public function deleteAbsence($chatID, $leavingDate, $returnDate){
+    public function deleteAbsence(int $chatID, string $leavingDate, string $returnDate): bool
+    {
         try{
             $query = "DELETE FROM Absence WHERE User = ? AND LeavingDate = ? AND ReturnDate = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -695,7 +708,8 @@ class GiuliettoDB
      *
      * @return bool Return true or false on failure
      */
-    public function insertGuest($chatID, $guestName, $checkInDate, $leavingDate, $room, $registrationDate){
+    public function insertGuest(int $chatID, string $guestName, string $checkInDate, string $leavingDate, int $room, $registrationDate): bool
+    {
         try{
             $query = "INSERT INTO `Guest`(`User`, `Name`, `CheckInDate`, `LeavingDate`, `Room`, `RegistrationDate`) VALUES (?,?,?,?,?,?)";
             $stmt = $this->_conn->prepare($query);
@@ -722,7 +736,8 @@ class GiuliettoDB
      *
      * @return bool Return true or false on failure
      */
-    public function updateGuest($chatID, $guestName, $checkInDate, $leavingDate, $newCheckInDate, $newLeavingDate){
+    public function updateGuest(int $chatID, string $guestName, string $checkInDate, string $leavingDate, string $newCheckInDate, string $newLeavingDate): bool
+    {
         try{
             $query = "UPDATE Guest G SET G.CheckInDate = ?, G.LeavingDate = ? WHERE G.User = ? AND G.Name = ? AND G.CheckInDate = ? AND G.LeavingDate = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -746,7 +761,7 @@ class GiuliettoDB
      *
      * @return array|false An associative array with the guest info or false on failure
      */
-    public function getGuest($chatID, $guestName, $checkInDate, $leavingDate){
+    public function getGuest(int $chatID, string $guestName, string $checkInDate, string $leavingDate){
         try{
             $query = "SELECT * FROM Guest G WHERE G.User = ? AND G.Name = ? AND G.CheckInDate = ? AND G.LeavingDate = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -770,7 +785,7 @@ class GiuliettoDB
      *
      * @return array|false An associative array with the guest info or false on failure
      */
-    public function getGuestById($id){
+    public function getGuestById(int $id){
         try{
             $query = "SELECT * FROM Guest G WHERE G.ID = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -794,7 +809,7 @@ class GiuliettoDB
      * @param $leavingDate string The second date of the interval whose guests you want to view, the date format is Y-m-d
      * @return mysqli_result|false Return a result-set or false on failure
      */
-    public function getGuestList($checkInDate, $leavingDate, $user = NULL){
+    public function getGuestList(string $checkInDate, string $leavingDate, $user = NULL){
         try{
 
             if(is_null($user)){
@@ -832,7 +847,7 @@ class GiuliettoDB
      * @param $chatID int The user chatID whose guests you want to view
      * @return mysqli_result|false Return a result-set or false on failure
      */
-    public function getMyGuest($chatID){
+    public function getMyGuest(int $chatID){
         try{
             $query = "Select * FROM Guest A WHERE A.User = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -849,13 +864,14 @@ class GiuliettoDB
     }
 
     /**
-     * @param $chatID
-     * @param $guestName
-     * @param $checkInDate
-     * @param $leavingDate
+     * @param $chatID int
+     * @param $guestName string
+     * @param $checkInDate string
+     * @param $leavingDate string
      * @return bool
      */
-    public function deleteGuest($chatID, $guestName, $checkInDate, $leavingDate){
+    public function deleteGuest(int $chatID, string $guestName, string $checkInDate, string $leavingDate): bool
+    {
         try{
             $query = "DELETE FROM Guest WHERE User = ? AND Name = ? AND CheckInDate = ? AND LeavingDate = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -894,7 +910,7 @@ class GiuliettoDB
      * @param $date string The date whose absences you want to view, the format of the date must be Y-m-d
      * @return mysqli_result|false Return a result-set or false on failure
      */
-    public function getIncomingGuest($date){
+    public function getIncomingGuest(string $date){
         try{
             $query = "SELECT * FROM Guest G WHERE G.CheckInDate = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -913,7 +929,12 @@ class GiuliettoDB
 
 //Squad Table
 
-    public function createGroup($groupName){
+    /**
+     * @param $groupName string
+     * @return bool
+     */
+    public function createGroup(string $groupName): bool
+    {
         try{
             $query = "INSERT INTO Squad VALUES(?);";
             $stmt = $this->_conn->prepare($query);
@@ -951,11 +972,12 @@ class GiuliettoDB
     }
 
     /**
-     * @param $chatID
-     * @param $groupName
+     * @param $chatID int
+     * @param $groupName string
      * @return bool
      */
-    public function insertUserInGroup($chatID, $groupName){
+    public function insertUserInGroup(int $chatID, string $groupName): bool
+    {
         try{
             $query = "INSERT INTO Member(User,Squad) VALUES(?,?);";
             $stmt = $this->_conn->prepare($query);
@@ -970,11 +992,12 @@ class GiuliettoDB
     }
 
     /**
-     * @param $chatID
-     * @param $groupName
+     * @param $chatID int
+     * @param $groupName string
      * @return bool
      */
-    public function removeUserFromGroup($chatID, $groupName){
+    public function removeUserFromGroup(int $chatID, string $groupName): bool
+    {
         try{
             $query = "DELETE FROM Member WHERE User = ? AND Squad = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -992,10 +1015,10 @@ class GiuliettoDB
 //Member Table
 
     /**
-     * @param $groupName
+     * @param $groupName string
      * @return array|false
      */
-    public function getUserInGroup($groupName){
+    public function getUserInGroup(string $groupName){
         try{
             $query = "SELECT U.* FROM Member M INNER JOIN User U ON M.User = U.ChatID WHERE M.Squad = ? AND U.Enabled IS TRUE;";
             $stmt = $this->_conn->prepare($query);
@@ -1019,10 +1042,10 @@ class GiuliettoDB
     }
 
     /**
-     * @param $chatID
+     * @param $chatID int
      * @return array|false
      */
-    public function getGroupsByUser($chatID){
+    public function getGroupsByUser(int $chatID){
         try{
             $query = "SELECT M.Squad, GROUP_CONCAT(E.TypeOfTurn ORDER BY E.TypeOfTurn) AS TypeOfTurn FROM Member M  LEFT JOIN Execution E ON M.Squad = E.Squad WHERE M.User = ? GROUP BY M.Squad ORDER BY E.Squad;";
             $stmt = $this->_conn->prepare($query);
@@ -1046,10 +1069,10 @@ class GiuliettoDB
     }
 
     /**
-     * @param $date
+     * @param $date string
      * @return array|false|null
      */
-    public function getSeatsNum($date){
+    public function getSeatsNum(string $date){
         try{
             $query = "       
                 SELECT  NumUtenti.numUtenti, PostiTotali.postiTotali, NumAssenti.numAssenti, NumOspiti.numOspiti, PostiTotali.postiTotali - NumUtenti.numUtenti + NumAssenti.numAssenti - NumOspiti.numOspiti AS FreeSeats
@@ -1103,7 +1126,8 @@ class GiuliettoDB
      * @param $secondGroup string
      * @return bool
      */
-    public function swapGroup($firstUser, $secondUser, $firstGroup, $secondGroup){
+    public function swapGroup(int $firstUser, int $secondUser, string $firstGroup, string $secondGroup): bool
+    {
         try{
 
             $this->_conn->autocommit(false);
@@ -1127,7 +1151,16 @@ class GiuliettoDB
 
 //Type of turn table
 
-    public function createNewTypeOfTurn($name, $frequency, $firstExecution, $userBySquad, $groupFrequency){
+    /**
+     * @param $name string
+     * @param $frequency int
+     * @param $firstExecution string
+     * @param $userBySquad int
+     * @param $groupFrequency int
+     * @return bool
+     */
+    public function createNewTypeOfTurn(string $name, int $frequency, string $firstExecution, int $userBySquad, int $groupFrequency): bool
+    {
         try{
             $query = "INSERT INTO `TypeOfTurn`(`Name`, `Frequency`, `FirstExecution`, `UsersBySquad`, `SquadFrequency`) VALUES (?,?,?,?,?)";
             $stmt = $this->_conn->prepare($query);
@@ -1141,6 +1174,9 @@ class GiuliettoDB
         }
     }
 
+    /**
+     * @return false|mysqli_result
+     */
     public function getTypeOfTurnList(){
         try{
             $query = "SELECT * FROM TypeOfTurn WHERE 1;";
@@ -1158,9 +1194,10 @@ class GiuliettoDB
     /**
      * Get all the info for all the type of turn
      *
+     * @param $turn string
      * @return array|false Return a result-set or false on failure
      */
-    public function getTypeOfTurn($turn){
+    public function getTypeOfTurn(string $turn){
         try{
             $query = "SELECT * FROM TypeOfTurn T WHERE T.Name = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -1175,7 +1212,11 @@ class GiuliettoDB
         }
     }
 
-    public function incStep($name)
+    /**
+     * @param $name string
+     * @return bool
+     */
+    public function incStep(string $name): bool
     {
         try{
             $query = "UPDATE TypeOfTurn SET CurrentStep = CurrentStep +1 WHERE Name = ?;";
@@ -1190,7 +1231,13 @@ class GiuliettoDB
         }
     }
 
-    public function updateTypeOfTurnFrequency($typeOfTurn, $newFrequency){
+    /**
+     * @param $typeOfTurn string
+     * @param $newFrequency int
+     * @return bool
+     */
+    public function updateTypeOfTurnFrequency(string $typeOfTurn, int $newFrequency): bool
+    {
         try{
             $query = "UPDATE TypeOfTurn SET Frequency = ? WHERE Name = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -1204,7 +1251,13 @@ class GiuliettoDB
         }
     }
 
-    public function updateUserByGroup($typeOfTurn, $usersByGroup){
+    /**
+     * @param $typeOfTurn string
+     * @param $usersByGroup int
+     * @return bool
+     */
+    public function updateUserByGroup(string $typeOfTurn, int $usersByGroup): bool
+    {
         try{
             $query = "UPDATE TypeOfTurn SET UsersBySquad = ? WHERE Name = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -1220,7 +1273,14 @@ class GiuliettoDB
 
 //Execution table
 
-    public function addExecution($typeOfTurn, $group, $step){
+    /**
+     * @param $typeOfTurn string
+     * @param $group string
+     * @param $step int
+     * @return bool
+     */
+    public function addExecution(string $typeOfTurn, string $group, int $step): bool
+    {
         try{
             $query = "INSERT INTO Execution VALUES(?,?,?);";
             $stmt = $this->_conn->prepare($query);
@@ -1235,10 +1295,10 @@ class GiuliettoDB
     }
 
     /**
-     * @param $typeofTurn
+     * @param $typeofTurn string
      * @return false|int
      */
-    public function getStepNumOfTurn($typeofTurn){
+    public function getStepNumOfTurn(string $typeofTurn){
         try{
             $query = "SELECT COUNT(*) AS Num FROM Execution E WHERE E.TypeOfTurn = ?";
             $stmt = $this->_conn->prepare($query);
@@ -1256,11 +1316,11 @@ class GiuliettoDB
     }
 
     /**
-     * @param $typeOfTurn
-     * @param int $next
+     * @param $typeOfTurn string
+     * @param $next int
      * @return array|false|null
      */
-    public function getGroupWillDoTheNextTurn($typeOfTurn, $next = 0){
+    public function getGroupWillDoTheNextTurn(string $typeOfTurn, int $next = 0){
         try{
             $turn = $this->getTypeOfTurn($typeOfTurn);
 
@@ -1293,11 +1353,11 @@ class GiuliettoDB
 //Turn Execution History table
 
     /**
-     * @param $date
-     * @param $typeOfTurn
+     * @param $date string
+     * @param $typeOfTurn string
      * @return array|false|null
      */
-    public function getUsersOfTurnPerformed($date, $typeOfTurn){
+    public function getUsersOfTurnPerformed(string $date, string $typeOfTurn){
         try{
             $query = "SELECT TEH.Date, TEH.TypeOfTurn, GROUP_CONCAT(TEH.User SEPARATOR ', ') AS Users FROM TurnExecutionHistory TEH WHERE TEH.Date = ? AND TEH.TypeOfTurn = ? GROUP BY TEH.Date, TEH.TypeOfTurn;";
             $stmt = $this->_conn->prepare($query);
@@ -1318,7 +1378,7 @@ class GiuliettoDB
      * @param $typeOfTurn string
      * @return int|false
      */
-    public function getLastExecution($name, $typeOfTurn){
+    public function getLastExecution(string $name, string $typeOfTurn){
         try{
             $query = "SELECT UNIX_TIMESTAMP(MAX(TEH.Date)) AS LastExecution FROM TurnExecutionHistory TEH WHERE TEH.User = ? AND TEH.TypeOfTurn = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -1353,7 +1413,13 @@ class GiuliettoDB
 
 //Room table
 
-    public function createRoom($room, $seats){
+    /**
+     * @param int $room
+     * @param int $seats
+     * @return bool
+     */
+    public function createRoom(int $room, int $seats): bool
+    {
         try{
             $query = "INSERT INTO Room VALUES(?,?);";
             $stmt = $this->_conn->prepare($query);
@@ -1367,7 +1433,11 @@ class GiuliettoDB
         }
     }
 
-    public function getUerInRoom($room){
+    /**
+     * @param int $room
+     * @return false|mysqli_result
+     */
+    public function getUerInRoom(int $room){
         try{
             $query = "SELECT * FROM Room R INNER JOIN User U ON R.Num = U.Room WHERE R.Num = ?;";
             $stmt = $this->_conn->prepare($query);
@@ -1384,7 +1454,11 @@ class GiuliettoDB
 
 //Easter Egg
 
-    public function getQuoteByMsg($msg){
+    /**
+     * @param string $msg
+     * @return array|false|null
+     */
+    public function getQuoteByMsg(string $msg){
         try{
             $query = "SELECT * FROM EasterEgg E WHERE E.Msg = ?;";
             $stmt = $this->_conn->prepare($query);
