@@ -404,8 +404,10 @@
                         $users = $db->getAllUsersForNotification('NewAbsence');
 
                         while($row = $users->fetch_assoc()){
-                            $bot->setChatID($row['ChatID']);
-                            $bot->sendMessage($user['FullName'].' '._('sarà assente dal').' '.strftime('%d %h %Y',$calendar['FirstDate']).' '._('al').' '. strftime('%d %h %Y',$calendar['SecondDate']));
+                            if($row['ChatID'] !== $chatID){
+                                $bot->setChatID($row['ChatID']);
+                                $bot->sendMessage($user['FullName'].' '._('sarà assente dal').' '.strftime('%d %h %Y',$calendar['FirstDate']).' '._('al').' '. strftime('%d %h %Y',$calendar['SecondDate']));
+                            }
                         }
                     }
                     else{
