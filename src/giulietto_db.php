@@ -1384,11 +1384,11 @@ class GiuliettoDB
 
 //Easter Egg
 
-    public function getEasterEgg($msg){
+    public function getQuoteByMsg($msg){
         try{
-            $query = "SELECT * FROM EasterEgg E WHERE E.Msg = ?";
+            $query = "SELECT * FROM EasterEgg E WHERE E.Msg = ?;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('s',$typeofTurn);
+            $stmt->bind_param('s',$msg);
             $stmt->execute();
 
             $result = $stmt->get_result();
@@ -1400,5 +1400,4 @@ class GiuliettoDB
             return false;
         }
     }
-
 }
