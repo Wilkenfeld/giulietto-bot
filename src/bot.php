@@ -614,8 +614,10 @@
                         $users = $db->getAllUsersForNotification('DeletedAbsence');
 
                         while($row = $users->fetch_assoc()){
-                            $bot->setChatID($row['ChatID']);
-                            $bot->sendMessage($user['FullName'].' '._('ha eliminato l\'assenza dal').' '.strftime('%d %h %Y',$words[3]).' '._('al').' '. strftime('%d %h %Y',$words[5]));
+                            if($row['ChatID'] !== $chatID){
+                                $bot->setChatID($row['ChatID']);
+                                $bot->sendMessage($user['FullName'].' '._('ha eliminato l\'assenza dal').' '.strftime('%d %h %Y',$words[3]).' '._('al').' '. strftime('%d %h %Y',$words[5]));
+                            }
                         }
                     }
                     else{
