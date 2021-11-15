@@ -162,6 +162,8 @@ class GiuliettoDB
     public function updateEmail(int $chatID, string $newEmail): bool
     {
 
+        $newEmail = strtolower($newEmail);
+
         if(!filter_var($newEmail, FILTER_VALIDATE_EMAIL)){
             return false;
         }
