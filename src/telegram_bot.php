@@ -8,13 +8,16 @@
  * @version 2.0
  */
 
-    //require_once 'config/config.php';
+    require_once 'config/config.php';
 
     const MESSAGE = 100;
     const EDITED_MESSAGE = 101;
     const CALLBACK_QUERY = 102;
     const SELECT_DATE_INTERVALL = 103;
     const SELECT_SINGLE_DATE = 104;
+    const MARKDOWN_2 =  "MarkdownV2";
+    const HTML = "HTML";
+    const MARKDOWN = "Markdown";
 
     const STATUS_FILE = "calendar_status.json";
 
@@ -35,7 +38,7 @@
         private $tmp_file_path;
 
         /**
-         * @param string $token Token Token del bot telegram
+         * @param string $token Token del bot telegram
          */
         public function __construct($token){
             $this->token = $token;
@@ -153,9 +156,21 @@
          * Invia un normale messaggio di testo
          *
          * @param string $messageText Testo del messaggio da inviare
+         * @param string|null $replyMarkup
+         * @param string|null $parseMode Accepted value is MarkdownV2, HTML and Markdown
+         *
          */
-        public function sendMessage($messageText, $parseMode = ""){
-            $url = $this->url."/sendMessage?chat_id=".$this->chatID."&text=".urlencode($messageText)."&parse_mode=$parseMode";
+        public function sendMessage(string $messageText, string $replyMarkup = null, string $parseMode = null){
+            $url = $this->url."/sendMessage?chat_id=".$this->chatID."&text=".urlencode($messageText);
+
+            if(!is_null($replyMarkup)){
+                $url .= "&reply_markup=".urlencode($replyMarkup);;
+            }
+
+            if(!is_null($parseMode)){
+                $url .= "&parse_mode=$parseMode";
+            }
+
             return file_get_contents($url);
         }
 
@@ -179,19 +194,6 @@
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $post_fields);
             return curl_exec($ch);
-        }
-
-        /**
-         * sendReplyKeyboard
-         *
-         * Invia una tastiera di risposta personalizzata
-         *
-         * @param string $messageText Testo del messaggio da inviare
-         * @param string $keyboard Oggetto JSON che definisce la ReplyMarkupKeyboard https://core.telegram.org/bots/api#replykeyboardmarkup
-         */
-        public function sendReplyKeyboard($messageText,$keyboard){
-            $url = $this->url."/sendMessage?chat_id=".$this->chatID."&text=".urlencode($messageText)."&reply_markup=".urlencode($keyboard);
-            return file_get_contents($url);
         }
 
         /**
