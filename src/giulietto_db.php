@@ -56,19 +56,19 @@ class GiuliettoDB
 //User table
 
     /**
-     * Insert new user in the User table 
-     * 
+     * Insert new user in the User table
+     *
      * @param int $chatID The identifier of chat, if the user is a private account is equal to user id
      * @param string $fullName The name and surname of the private user or the title of the group, supergroup or channel
-     * @param string $username Username, for private chats, supergroups and channels if available
-     * @param string $room The room where the private user bed
+     * @param string|null $username Username, for private chats, supergroups and channels if available
+     * @param int|null $room The room where the private user bed
      * @param string $type The type of user, it can be private, group, supergroup or channel
      * @param string $accountType The type of account
      * @param string $language
      *
      * @return true|false Return true or false on failure
      */
-    public function insertUser(int $chatID, string $fullName, string $username, string $room, string $type, string $accountType, string $language): bool
+    public function insertUser(int $chatID, string $fullName, ?string $username, ?int $room, string $type, string $accountType, string $language): bool
     {
         try{
             $query = "INSERT INTO `User`(`ChatID`, `FullName`, `Username`, `Type`, `InscriptionDate`, `Room`, `Enabled`, `AccountType`, `Language`) VALUES (?,?,?,?,NOW(),?,TRUE,?,?)";
