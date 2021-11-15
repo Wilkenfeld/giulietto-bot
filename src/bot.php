@@ -61,9 +61,49 @@
     $db->setLogFile(LOG_FILE_PATH.'/'.preg_replace('/\s+/',"_",$update["from"]["first_name"]).'/'.preg_replace('/\s+/',"_",$update["from"]["first_name"]).".log");
 
     $user = $db->getUser($chatID);
+
     if($user === false){
         $bot->sendMessage("An error has occurred, the bot is temporarily out of service.");
-        exit();
+        exit;
+    }
+    elseif(empty($user)){
+
+        if($update["chat"]["type"] === "private" and preg_match('/^(pw|Pw|PW|pW)(\s+)(\w+)$/',$update["text"],$words)){
+            //Recupera account type da password
+            $accountType = $db->getAccountType($words[3]);
+
+            if(empty($accountType)){
+                $bot->sendMessage(_('Non esiste nessun account associato a questa password'));
+            }
+            else{
+                //Lettura concatenazione e salvataggio di nome e cognome
+                $fullName = $update["chat"]["first_name"]." ".$update["chat"]["last_name"];
+                //Eliminazione eventuali spazi iniziali e finali
+                $fullName = trim($fullName);
+
+                $result = $db->insertUser($chatID,$fullName,$update["chat"]["username"],null,$update["chat"]["type"], $accountType, $update['from']['language_code']);
+
+                if($result === true){
+                    $bot->sendMessage(_("Benvenuto nel bot di Villa Giulia, clicca qui per aprire in menù => /menu"));
+
+                    $newUserNotification = $db->getAllUsersForNotification('NewUser');
+                    $_users = [];
+
+                    while($row = $newUserNotification->fetch_assoc()){
+                        $_users[] = $row['ChatID'];
+                    }
+
+                    sendNotification($_users, $fullName._(' ha appena effettuato l\'accesso con l\'account: ').$accountType, [$chatID]);
+                }
+                else{
+                    $bot->sendMessage(_("Si è verificato un errore, registrazione non riuscita"));
+                }
+            }
+        }
+        else{
+            $bot->sendMessage(_("Effettua l'accesso per poter utilizzare il bot, per accedere invia un messaggio in questo formato: \"pw password\", dove password è la password che ti è stata fornita per l'accesso"));
+        }
+        exit;
     }
 
     setlocale(LC_ALL, LOCALE[$user["Language"]]);
@@ -71,6 +111,7 @@
     textdomain('messages');
 
     $permission = $db->getPermission($user['AccountType']);
+
     if($permission === false){
         $bot->sendMessage(_("Si è verificato un errore, il bot è momentaneamente fuori servizio."));
         exit();
@@ -127,10 +168,10 @@
                 $file = json_decode($file, true);
 
                 if( $db->createNewTypeOfTurn($file['Name'], $file['Frequency'], date('Y-m-d',$date), $file['UsersByGroup'], $file['GroupFrequency']) ){
-                    $bot->sendReplyKeyboard(_('Nuovo turno creato'), $keyboard);
+                    $bot->sendMessage(_('Nuovo turno creato'), $keyboard);
                 }
                 else{
-                    $bot->sendReplyKeyboard(_('Si è verificato un errore nella creazione del nuovo turno'), $keyboard);
+                    $bot->sendMessage(_('Si è verificato un errore nella creazione del nuovo turno'), $keyboard);
                 }
 
                 unlink(TmpFileUser_path.'tmpNewTurn.json');
@@ -216,7 +257,7 @@
                     $guest = $db->getGuest($file["User"], $file["GuestName"], date('Y-m-d',$file['CheckInDate']), date('Y-m-d',$file['LeavingDate']));
 
                     if( $file['CheckInDate'] < strtotime('+2 days') ){
-                        $bot->sendReplyKeyboard(_("Modifica non riuscita, l'ospite deve essere registrato e confermato con 2 giorni d'anticipo, prova a ricontrollare le date inserite"),$keyboard);
+                        $bot->sendMessage(_("Modifica non riuscita, l'ospite deve essere registrato e confermato con 2 giorni d'anticipo, prova a ricontrollare le date inserite"),$keyboard);
 
                         sendMessageEditGuest($guest, $permission, $messageInLineKeyboardPath);
                     }
@@ -271,7 +312,7 @@
                                     sendMessageEditGuest($guest, $permission, $messageInLineKeyboardPath);
                                 }
                                 else{
-                                    $bot->sendReplyKeyboard(_("Non è stato possibile modificare il periodo di permanenza dell'ospite"), $keyboard);
+                                    $bot->sendMessage(_("Non è stato possibile modificare il periodo di permanenza dell'ospite"), $keyboard);
                                 }
                             }
                             else{
@@ -300,7 +341,7 @@
                                     $message = _("Il/La tuo/a compagno/a di stanza ").$user["FullName"]._(" vorrebbe cambiare il periodo di permanenza di ").$file['GuestName']._(" nella vostra stanza, il nuovo periodo di permanenza è dal ").$arrivo._(" al ").$partenza._(", per te va bene?");
 
                                     $bot->setChatID($roommate["ChatID"]);
-                                    $msgResult = json_decode($bot->sendReplyKeyboard($message, $keyboardYesNo),true);
+                                    $msgResult = json_decode($bot->sendMessage($message, $keyboardYesNo),true);
 
                                     $userMsgID[$roommate["ChatID"]] = $msgResult["result"]["message_id"];
                                 }
@@ -315,15 +356,15 @@
 
                                 $bot->setChatID($chatID);
                                 if($roommateList->num_rows > 1){
-                                    $bot->sendReplyKeyboard(_("Attendi la conferma dei tuoi compagni di stanza, ti arriverà una notifica quando confermeranno"), $keyboard);
+                                    $bot->sendMessage(_("Attendi la conferma dei tuoi compagni di stanza, ti arriverà una notifica quando confermeranno"), $keyboard);
                                 }
                                 else{
-                                    $bot->sendReplyKeyboard(_("Attendi la conferma del tuo compagno di stanza, ti arriverà una notifica quando confermerà"), $keyboard);
+                                    $bot->sendMessage(_("Attendi la conferma del tuo compagno di stanza, ti arriverà una notifica quando confermerà"), $keyboard);
                                 }
                             }
                         }
                         else{
-                            $bot->sendReplyKeyboard(_("L'ospite risulta già registrato"), $keyboard);
+                            $bot->sendMessage(_("L'ospite risulta già registrato"), $keyboard);
                             unlink($fileName);
                         }
                     }
@@ -415,7 +456,7 @@
                         }
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Non è stato possibile modificare l'assenze"), $keyboard);
+                        $bot->sendMessage(_("Non è stato possibile modificare l'assenze"), $keyboard);
                     }
 
                     unlink($fileName);
@@ -535,7 +576,7 @@
                         else{
                             $bot->setChatID($words[3]);
 
-                            $bot->sendReplyKeyboard(_("Non è stato possibile modificare il periodo di permanenza dell'ospite"), $keyboard);
+                            $bot->sendMessage(_("Non è stato possibile modificare il periodo di permanenza dell'ospite"), $keyboard);
                         }
                         unlink($fileName);
                     }
@@ -574,7 +615,7 @@
                         }
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Non è stato possibile eliminare l'assenza"), $keyboard);
+                        $bot->sendMessage(_("Non è stato possibile eliminare l'assenza"), $keyboard);
                     }
                 }
             }
@@ -612,7 +653,7 @@
                         }
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Non è stato possibile cancellare la registrazione dell'ospite"), $keyboard);
+                        $bot->sendMessage(_("Non è stato possibile cancellare la registrazione dell'ospite"), $keyboard);
                     }
 
                     unlink(TmpFileUser_path.'updateGuest.json');
@@ -680,7 +721,7 @@
                         file_put_contents($messageInLineKeyboardPath ,json_encode($messageInLineKeyboard, JSON_PRETTY_PRINT));
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Non è stato possibile abilitare/disabilitare l'utente"), $keyboard);
+                        $bot->sendMessage(_("Non è stato possibile abilitare/disabilitare l'utente"), $keyboard);
                     }
                 }
             }
@@ -709,7 +750,7 @@
                     file_put_contents(TmpFileUser_path.'selectRoom.json', json_encode($file1));
 
                     $roomsKeyboard = createUserKeyboard($_rooms,[[['text' => _('Nessuna camera')]],[['text' => "\u{1F3E1}"]]]);
-                    $bot->sendReplyKeyboard(_('Scegli la camera da assegnare fra quelle disponibili: '), $roomsKeyboard);
+                    $bot->sendMessage(_('Scegli la camera da assegnare fra quelle disponibili: '), $roomsKeyboard);
                 }
             }
             elseif(preg_match("/^(insertUserInGroup|deleteUserFromGroup)(-)(-?\d+)$/",$update["data"],$words)){
@@ -731,7 +772,7 @@
                         }
                         else{
                             $groupsKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => "\u{1F3E1}"]] ]);
-                            $bot->sendReplyKeyboard(_('Scegli in quale gruppo vuoi inserire l\'utente: '), $groupsKeyboard);
+                            $bot->sendMessage(_('Scegli in quale gruppo vuoi inserire l\'utente: '), $groupsKeyboard);
                         }
                     }
                     elseif($words[1] == 'deleteUserFromGroup'){
@@ -747,7 +788,7 @@
                         }
                         else{
                             $groupsKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => "\u{1F3E1}"]] ]);
-                            $bot->sendReplyKeyboard(_('Scegli da quale gruppo vuoi rimuovere l\'utente: '), $groupsKeyboard);
+                            $bot->sendMessage(_('Scegli da quale gruppo vuoi rimuovere l\'utente: '), $groupsKeyboard);
                         }
                     }
 
@@ -806,7 +847,7 @@
 
                     $groupList = $db->getGroupList();
                     $groupsKeyboard = createUserKeyboard(array_keys($groupList));
-                    $bot->sendReplyKeyboard(_('Scegli in quale gruppo vuoi inserire gli utenti nella camera: '), $groupsKeyboard);
+                    $bot->sendMessage(_('Scegli in quale gruppo vuoi inserire gli utenti nella camera: '), $groupsKeyboard);
                 }
             }
         }
@@ -833,7 +874,8 @@
 
         }
         elseif($update["chat"]["type"] === "private"){
-            //Login
+
+            //Change account type
             if(preg_match('/^(pw|Pw|PW|pW)(\s+)(\w+)$/',$update["text"],$words)){
                 //Recupera account type da password
                 $accountType = $db->getAccountType($words[3]);
@@ -843,56 +885,24 @@
                     exit;
                 }
 
-                if(!empty($user)){
-                    if($user['AccountType'] == $accountType){
-                        $bot->sendMessage(_('Sei gia registrato'));
-                    }
-                    else{
-                        $db->updateAccountType($chatID, $accountType);
-                        $bot->sendMessage(_("Sei passato all'account di tipo: ").$accountType.PHP_EOL._('Clicca per ricaricare il menù => /menu'));
-
-                        $newUserNotification = $db->getAllUsersForNotification('NewUser');
-                        $_users = [];
-
-                        while($row = $newUserNotification->fetch_assoc()){
-                            $_users[] = $row['ChatID'];
-                        }
-
-                        sendNotification($_users, $user['FullName']._(' è passato all\'account di tipo: ').$accountType, [$chatID]);
-                    }
+                if($user['AccountType'] == $accountType){
+                    $bot->sendMessage(_('Sei gia registrato'));
                 }
                 else{
-                    //Lettura concatenazione e salvataggio di nome e cognome
-                    $fullName = $update["chat"]["first_name"]." ".$update["chat"]["last_name"];
-                    //Eliminazione eventuali spazi iniziali e finali
-                    $fullName = trim($fullName);
+                    $db->updateAccountType($chatID, $accountType);
+                    $bot->sendMessage(_("Sei passato all'account di tipo: ").$accountType.PHP_EOL._('Clicca per ricaricare il menù => /menu'));
 
-                    $result = $db->insertUser($chatID,$fullName,$update["chat"]["username"],null,$update["chat"]["type"], $accountType, $update['from']['language_code']);
+                    $newUserNotification = $db->getAllUsersForNotification('NewUser');
+                    $_users = [];
 
-                    if($result === true){
-                        $bot->sendMessage(_("Benvenuto nel bot di Villa Giulia, clicca qui per aprire in menù => /menu"));
-
-                        $newUserNotification = $db->getAllUsersForNotification('NewUser');
-                        $_users = [];
-
-                        while($row = $newUserNotification->fetch_assoc()){
-                            $_users[] = $row['ChatID'];
-                        }
-
-                        sendNotification($_users, $fullName._(' ha appena effettuato l\'accesso con l\'account: ').$accountType, [$chatID]);
+                    while($row = $newUserNotification->fetch_assoc()){
+                        $_users[] = $row['ChatID'];
                     }
-                    else{
-                        $bot->sendMessage(_("Si è verificato un errore, registrazione non riuscita"));
-                    }
+
+                    sendNotification($_users, $user['FullName']._(' è passato all\'account di tipo: ').$accountType, [$chatID]);
                 }
             }
             else{
-
-                if(empty($user)){
-                    $bot->sendMessage(_("Effettua l'accesso per poter utilizzare il bot, per accedere invia un messaggio in questo formato: \"pw password\", dove password è la password che ti è stata fornita per l'accesso"));
-                    exit;
-                }
-
                 //Se lo username dell'utente è cambiato viene aggiornato nel database
                 if($user['Username'] != $update['chat']['username']){
                     $db->updateUsername($chatID,$update['chat']['username']);
@@ -908,36 +918,36 @@
                 if($update["reply_to_message"]["text"] == _("Invia il file con le nuove linee guida:")){
 
                     if($permission["NewGuideLine"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
                     if(downloadDocument(FILES_PATH,$update["document"]["file_id"],"Linee_guida")){
-                        $bot->sendReplyKeyboard(_("Nuove linee guida caricate"), $keyboard);
+                        $bot->sendMessage(_("Nuove linee guida caricate"), $keyboard);
                     }
                     else
                     {
-                        $bot->sendReplyKeyboard(_("Si è verificato un errore nel salvataggio del file"), $keyboard);
+                        $bot->sendMessage(_("Si è verificato un errore nel salvataggio del file"), $keyboard);
                     }
 
                 }
                 elseif($update["reply_to_message"]["text"] == _("Invia la tua nuova email:")){
 
                     if($permission["ChangeEmail"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
                     if($db->updateEmail($chatID,$update["text"]) === false){
-                        $bot->sendReplyKeyboard(_("Non è stato possibile aggiornare l'e-mail, controlla che sia in un formato valido."), $keyboard);
+                        $bot->sendMessage(_("Non è stato possibile aggiornare l'e-mail, controlla che sia in un formato valido."), $keyboard);
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("E-mail aggiornata, la tua nuova e-mail è: ").$update["text"], $keyboard);
+                        $bot->sendMessage(_("E-mail aggiornata, la tua nuova e-mail è: ").$update["text"], $keyboard);
                     }
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia il numero di posti della camera:')){
 
                     if($permission["NewRoom"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -945,16 +955,16 @@
                     $roomsCount = $roomsCount->fetch_assoc()['roomsCount'];
 
                     if($db->createRoom($roomsCount+1, $update['text'])){
-                        $bot->sendReplyKeyboard(_('Camera').' '.($roomsCount+1).' '._('aggiunta'), $keyboard);
+                        $bot->sendMessage(_('Camera').' '.($roomsCount+1).' '._('aggiunta'), $keyboard);
                     }
                     else{
-                        $bot->sendReplyKeyboard(_('Si è verificato un errore nell\'aggiungere la camera'), $keyboard);
+                        $bot->sendMessage(_('Si è verificato un errore nell\'aggiungere la camera'), $keyboard);
                     }
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi Nome e Cognome dell'ospite da registrare:")) {
 
                     if($permission["NewGuest"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -964,7 +974,7 @@
                 elseif($update["reply_to_message"]["text"] == _("Scrivi Nome e Cognome dell'ospite da eliminare:")) {
 
                     if($permission["DeleteGuest"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -984,7 +994,7 @@
                 elseif($update["reply_to_message"]["text"] == _("Scatta una foto del fronte del documento dell'ospite ed inviala:")){
 
                     if($permission["NewGuest"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -995,7 +1005,7 @@
                 elseif($update["reply_to_message"]["text"] == _("Scatta una foto del retro del documento dell'ospite ed inviala:")){
 
                     if($permission["NewGuest"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1005,7 +1015,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia il nuovo nome:')){
                     if($permission["ChangeNameUser"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1031,7 +1041,7 @@
                         rename(LOG_FILE_PATH.$oldName,LOG_FILE_PATH.$newName);
                         rename(LOG_FILE_PATH.$newName."/$oldName.log",LOG_FILE_PATH.$newName."/$newName.log");
 
-                        $bot->sendReplyKeyboard(_('Nome modificato'), $usersKeyboard);
+                        $bot->sendMessage(_('Nome modificato'), $usersKeyboard);
 
                         sendUser($db->getUser($_chatID), $permission,  TMP_FILE_PATH.$newName.'/messageInLineKeyboard.json');
                     }
@@ -1042,7 +1052,7 @@
                             $usersName[] = $row['FullName'];
                         }
                         $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
-                        $bot->sendReplyKeyboard(_("Non è stato possibile cambiare il nome da ").$_user['FullName']._(" a ").$update['text'], $usersKeyboard);
+                        $bot->sendMessage(_("Non è stato possibile cambiare il nome da ").$_user['FullName']._(" a ").$update['text'], $usersKeyboard);
                     }
 
                     $file['Type'] = 'SelectUserForEdit';
@@ -1053,7 +1063,7 @@
                 elseif($update["reply_to_message"]["text"] == _('Eliminando un utente verranno eliminate in automatico anche tutte le sue assenze registrate, i suoi ospiti e verrà rimosso da tutti i gruppi di cui fa parte. Per confermare l\'eliminazione scrivi il seguente codice:')){
 
                     if($permission["DeleteUser"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1069,14 +1079,14 @@
 
                         if ($otp['OTP'] == $update['text']) {
                             if($db->deleteUser($_chatID)){
-                                $bot->sendReplyKeyboard($_user['FullName']._(' eliminato'), $keyboard);
+                                $bot->sendMessage($_user['FullName']._(' eliminato'), $keyboard);
                             }
                             else{
-                                $bot->sendReplyKeyboard(_("Non è stato possibile eliminare l'utente"), $keyboard);
+                                $bot->sendMessage(_("Non è stato possibile eliminare l'utente"), $keyboard);
                             }
                         }
                         else{
-                            $bot->sendReplyKeyboard(_('Il codice inserito non è valido, l\'utente non verrà eliminato'), $keyboard);
+                            $bot->sendMessage(_('Il codice inserito non è valido, l\'utente non verrà eliminato'), $keyboard);
                         }
 
                     }
@@ -1086,7 +1096,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia la nuova frequenza del turno:')){
                     if($permission["EditTypeOfTurn"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1115,19 +1125,19 @@
 
                     if($db->updateTypeOfTurnFrequency($_typeOfTurn,$update['text'])){
 
-                        $bot->sendReplyKeyboard(_('Frequenza cambiata'), $typeOfTurnKeyboard);
+                        $bot->sendMessage(_('Frequenza cambiata'), $typeOfTurnKeyboard);
 
                         sendMessageEditTypeOfTurn($db->getTypeOfTurn($_typeOfTurn), $permission, $messageInLineKeyboardPath);
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Non è stato possibile cambiare la frequenza"), $typeOfTurnKeyboard);
+                        $bot->sendMessage(_("Non è stato possibile cambiare la frequenza"), $typeOfTurnKeyboard);
                     }
 
                     unlink(TmpFileUser_path.'editTypeOfTurn.json');
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia da quanti utenti deve essere composto il gruppo:')){
                     if($permission["EditTypeOfTurn"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1156,19 +1166,19 @@
 
                     if($db->updateUserByGroup($_typeOfTurn,$update['text'])){
 
-                        $bot->sendReplyKeyboard(_('Numero di utenti per gruppo modificato'), $typeOfTurnKeyboard);
+                        $bot->sendMessage(_('Numero di utenti per gruppo modificato'), $typeOfTurnKeyboard);
 
                         sendMessageEditTypeOfTurn($db->getTypeOfTurn($_typeOfTurn), $permission, $messageInLineKeyboardPath);
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Non è stato possibile cambiare il numero di utenti per gruppo"), $typeOfTurnKeyboard);
+                        $bot->sendMessage(_("Non è stato possibile cambiare il numero di utenti per gruppo"), $typeOfTurnKeyboard);
                     }
 
                     unlink(TmpFileUser_path.'editTypeOfTurn.json');
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi il nome del nuovo turno da creare:")){
                     if($permission["NewTypeOfTurn"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1179,7 +1189,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi ogni quanti giorni deve essere eseguito il turno:")){
                     if($permission["NewTypeOfTurn"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1198,7 +1208,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi quante volte consecutivamente un gruppo deve eseguire il turno:")){
                     if($permission["NewTypeOfTurn"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1217,7 +1227,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi da quanti utenti deve indicativamente essere composto un gruppo:")){
                     if($permission["NewTypeOfTurn"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1240,7 +1250,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _('Scrivi il seguente codice per confermare:')){
                     if($permission["RearrangeGroups"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1348,7 +1358,7 @@
                                 $i++;
                                 $userInGroup = $db->getUserInGroup($key);
                                 if($i == $rowNumber){
-                                    $bot->sendReplyKeyboard(userInGroup($key,$userInGroup),$keyboard);
+                                    $bot->sendMessage(userInGroup($key,$userInGroup),$keyboard);
                                 }
                                 else{
                                     $bot->sendMessage(userInGroup($key,$userInGroup));
@@ -1408,7 +1418,7 @@
                 elseif($update["text"] == _("Lista assenti")." \u{1F4CB}"){
 
                     if($permission["AbsenceList"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1420,7 +1430,7 @@
                 elseif($update["text"] == _("Lista ospiti")." \u{1F4CB}"){
 
                     if($permission["GuestList"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1432,7 +1442,7 @@
                 elseif($update["text"] == _("Lista utenti")." \u{1F4CB}"){
 
                     if($permission["UserList"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1456,14 +1466,14 @@
                             file_put_contents(TmpFileUser_path.'selectUser.json', json_encode($file, JSON_PRETTY_PRINT));
 
                             $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
-                            $bot->sendReplyKeyboard(_('Seleziona un utente per modificarlo:'), $usersKeyboard);
+                            $bot->sendMessage(_('Seleziona un utente per modificarlo:'), $usersKeyboard);
                         }
                     }
                 }
                 elseif($update["text"] == _("Lista camere")." \u{1F4CB}"){
 
                     if($permission["ChangeUserRoom"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1487,12 +1497,12 @@
                     file_put_contents(TmpFileUser_path.'selectRoom.json', json_encode($file, JSON_PRETTY_PRINT));
 
                     $bot->sendMessage($msg);
-                    $bot->sendReplyKeyboard(_('Seleziona una camera per vederne i membri:'), $roomsKeyboard);
+                    $bot->sendMessage(_('Seleziona una camera per vederne i membri:'), $roomsKeyboard);
                 }
                 elseif($update["text"] == _("Aggiungi nuova camera")){
 
                     if($permission["NewRoom"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1548,7 +1558,7 @@
                         $i++;
                         $userList = $db->getUserInGroup($key);
                         if($i == $rowNumber){
-                            $bot->sendReplyKeyboard(userInGroup($key,$userList),$keyboard);
+                            $bot->sendMessage(userInGroup($key,$userList),$keyboard);
                         }
                         else{
                             $bot->sendMessage(userInGroup($key,$userList));
@@ -1558,7 +1568,7 @@
                 elseif($update["text"] == _("Modifica email")." \u{1F4E7}"){
 
                     if($permission["ChangeEmail"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1572,7 +1582,7 @@
                 elseif($update["text"] == _("Assenza")." \u{1F44B}") {
 
                     if($permission["NewAbsence"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1585,7 +1595,7 @@
                 elseif($update["text"] == _("Ospite")." \u{1F6CF}") {
 
                     if($permission["NewGuest"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1622,7 +1632,7 @@
                 elseif($update["text"] == _("Gruppi")." \u{1F4CB}"){
 
                     if($permission["GroupList"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1647,7 +1657,7 @@
                     elseif(sizeof($groupList) == 0) {
                         if($permission['NewGroup']){
                             $groupKeyboard = createUserKeyboard(null, [ [ ['text' => _("Nuovo gruppo")] ], [['text' => "\u{1F3E1}"]] ]);
-                            $bot->sendReplyKeyboard(_("Non esiste nessun gruppo"), $groupKeyboard);
+                            $bot->sendMessage(_("Non esiste nessun gruppo"), $groupKeyboard);
                         }
                         else{
                             $bot->sendMessage(_("Non esiste nessun gruppo"));
@@ -1661,13 +1671,13 @@
                             $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => "\u{1F3E1}"]] ]);
 
                         }
-                        $bot->sendReplyKeyboard(_("Seleziona un gruppo per vederne i membri:"), $groupKeyboard);
+                        $bot->sendMessage(_("Seleziona un gruppo per vederne i membri:"), $groupKeyboard);
                     }
                 }
                 elseif($update["text"] == _("Nuovo gruppo")){
 
                     if($permission["NewGroup"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1677,7 +1687,7 @@
                 elseif($update["text"] == _("Le mie assenze")." \u{1F4CB}"){
 
                     if($permission["MyAbsenceList"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1721,7 +1731,7 @@
                                     $bot->sendMessage($msg);
                                 }
                                 else{
-                                    $msgResult = json_decode($bot->sendReplyKeyboard($msg,$keyboardAbsence),true);
+                                    $msgResult = json_decode($bot->sendMessage($msg,$keyboardAbsence),true);
 
                                     $messageInLineKeyboard = file_get_contents($messageInLineKeyboardPath);
                                     $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);
@@ -1739,7 +1749,7 @@
                 elseif($update["text"] == _("I miei ospiti")." \u{1F4CB}"){
 
                     if($permission["MyGuestList"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1790,7 +1800,7 @@
 
                     $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
 
-                    $bot->sendReplyKeyboard(_('Seleziona un turno per visualizzarlo'), $typeOfTurnKeyboard);
+                    $bot->sendMessage(_('Seleziona un turno per visualizzarlo'), $typeOfTurnKeyboard);
 
                     $file['Type'] = 'Show';
                     file_put_contents(TmpFileUser_path.'selectTypeOfTurn.json', json_encode($file, JSON_PRETTY_PRINT));
@@ -1798,7 +1808,7 @@
                 elseif($update["text"] == _("Carica Linee guida")." \u{1F4D6}"){
 
                     if($permission["NewGuideLine"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1807,7 +1817,7 @@
                 elseif($update["text"] == _("Esporta")." \u{1F4DD}"){
 
                     if(($permission["ExportUserList"] or $permission["ExportGuest"] or $permission["ExportAbsence"]) == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -1815,16 +1825,16 @@
                     $exportKeyboard[] = [['text' => "\u{1F3E1}"]];
                     $exportKeyboard = json_encode(['keyboard'=>  $exportKeyboard, 'resize_keyboard'=> true] ,JSON_PRETTY_PRINT);
 
-                    $bot->sendReplyKeyboard(_("Scegli cosa vuoi esportare"), $exportKeyboard);
+                    $bot->sendMessage(_("Scegli cosa vuoi esportare"), $exportKeyboard);
                 }
                 elseif($update["text"] == _("Lista utenti")){
                     if($permission["ExportUserList"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
                     if(empty($user["Email"])){
-                        $bot->sendReplyKeyboard(_("Imposta un email per poter ricevere il file"), $keyboard);
+                        $bot->sendMessage(_("Imposta un email per poter ricevere il file"), $keyboard);
                         exit;
                     }
 
@@ -1882,20 +1892,20 @@
                     $file[0] = "$filePath/Lista_utenti_".date('d_m_Y').".csv";
 
                     if (!email($user["Email"], $from, $fromName, $subject, '', $file)) {
-                        $bot->sendReplyKeyboard(_("Si è verificato un errore nell'inviare l'email"), $keyboard);
+                        $bot->sendMessage(_("Si è verificato un errore nell'inviare l'email"), $keyboard);
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Email inviata correttamente, controlla la tua casella di posta elettronica per consultare il file"), $keyboard);
+                        $bot->sendMessage(_("Email inviata correttamente, controlla la tua casella di posta elettronica per consultare il file"), $keyboard);
                     }
                 }
                 elseif($update["text"] == _("Ospiti")){
                     if($permission["ExportGuest"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
                     if(empty($user["Email"])){
-                        $bot->sendReplyKeyboard(_("Imposta un email per poter ricevere il file"), $keyboard);
+                        $bot->sendMessage(_("Imposta un email per poter ricevere il file"), $keyboard);
                         exit;
                     }
 
@@ -1952,20 +1962,20 @@
                     $file[0] = "$filePath/Lista_ospiti_".date('d_m_Y').".csv";
 
                     if (!email($user["Email"], $from, $fromName, $subject, '', $file)) {
-                        $bot->sendReplyKeyboard(_("Si è verificato un errore nell'inviare l'email"), $keyboard);
+                        $bot->sendMessage(_("Si è verificato un errore nell'inviare l'email"), $keyboard);
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Email inviata correttamente, controlla la tua casella di posta elettronica per consultare il file"), $keyboard);
+                        $bot->sendMessage(_("Email inviata correttamente, controlla la tua casella di posta elettronica per consultare il file"), $keyboard);
                     }
                 }
                 elseif($update["text"] == _("Assenze")){
                     if($permission["ExportAbsence"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
                     if(empty($user["Email"])){
-                        $bot->sendReplyKeyboard(_("Imposta un email per poter ricevere il file"), $keyboard);
+                        $bot->sendMessage(_("Imposta un email per poter ricevere il file"), $keyboard);
                         exit;
                     }
 
@@ -2016,16 +2026,16 @@
                     $file[0] = "$filePath/Lista_assenze_".date('d_m_Y').".csv";
 
                     if (!email($user["Email"], $from, $fromName, $subject, '', $file)) {
-                        $bot->sendReplyKeyboard(_("Si è verificato un errore nell'inviare l'email"), $keyboard);
+                        $bot->sendMessage(_("Si è verificato un errore nell'inviare l'email"), $keyboard);
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Email inviata correttamente, controlla la tua casella di posta elettronica per consultare il file"), $keyboard);
+                        $bot->sendMessage(_("Email inviata correttamente, controlla la tua casella di posta elettronica per consultare il file"), $keyboard);
                     }
 
                 }
                 elseif($update["text"] == _("Calendario turni")." \u{1F5D3}"){
                     if($permission["TurnCalendar"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -2047,14 +2057,14 @@
 
                     $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
 
-                    $bot->sendReplyKeyboard(_('Seleziona un turno per visualizzarne il calendario'), $typeOfTurnKeyboard);
+                    $bot->sendMessage(_('Seleziona un turno per visualizzarne il calendario'), $typeOfTurnKeyboard);
 
                     $file['Type'] = 'ShowCalendar';
                     file_put_contents(TmpFileUser_path.'selectTypeOfTurn.json', json_encode($file, JSON_PRETTY_PRINT));
                 }
                 elseif($update["text"] == _("Tipi turno")." \u{1F4CB}"){
                     if($permission["TypeOfTurnList"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -2077,14 +2087,14 @@
                         $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
                     }
 
-                    $bot->sendReplyKeyboard(_('Seleziona un turno per visualizzarlo e modificarlo'), $typeOfTurnKeyboard);
+                    $bot->sendMessage(_('Seleziona un turno per visualizzarlo e modificarlo'), $typeOfTurnKeyboard);
 
                     $file['Type'] = 'Edit';
                     file_put_contents(TmpFileUser_path.'selectTypeOfTurn.json', json_encode($file, JSON_PRETTY_PRINT));
                 }
                 elseif($update["text"] == _('Crea nuovo turno')){
                     if($permission["NewTypeOfTurn"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -2092,7 +2102,7 @@
                 }
                 elseif($update["text"] == _("Scambia gruppo")." \u{1F503}"){
                     if($permission["SwapGroup"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -2109,11 +2119,11 @@
                     }
                     $userKeyboard = createUserKeyboard($userList,[[['text' => "\u{1F3E1}"]]]);
 
-                    $bot->sendReplyKeyboard(_("Con chi vuoi fare a scambio di gruppo?"), $userKeyboard);
+                    $bot->sendMessage(_("Con chi vuoi fare a scambio di gruppo?"), $userKeyboard);
                 }
                 elseif($update["text"] == _("Riorganizza Gruppi")." \u{1F500}"){
                     if($permission["RearrangeGroups"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -2131,22 +2141,22 @@
                     $langArrayKeyboard[] = [['text' => _("Italiano")]];
                     $langArrayKeyboard[] = [['text' => "\u{1F3E1}"]];
                     $langKeyboard = json_encode(['keyboard'=>  $langArrayKeyboard, 'resize_keyboard'=> true] ,JSON_PRETTY_PRINT);
-                    $bot->sendReplyKeyboard(_("Seleziona la lingua"), $langKeyboard);
+                    $bot->sendMessage(_("Seleziona la lingua"), $langKeyboard);
                 }
                 elseif($update["text"] == _("Italiano")){
                     if($db->updateLanguage($chatID,'it')){
-                        $bot->sendReplyKeyboard(_("Lingua italiana impostata"), $keyboard);
+                        $bot->sendMessage(_("Lingua italiana impostata"), $keyboard);
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Si è verificato un problema nell'impostare la lingua da te richiesta"), $keyboard);
+                        $bot->sendMessage(_("Si è verificato un problema nell'impostare la lingua da te richiesta"), $keyboard);
                     }
                 }
                 elseif($update["text"] == _("Inglese")){
                     if($db->updateLanguage($chatID,'en')){
-                        $bot->sendReplyKeyboard(_("The English language has been set"), $keyboard);
+                        $bot->sendMessage(_("The English language has been set"), $keyboard);
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Si è verificato un problema nell'impostare la lingua da te richiesta"), $keyboard);
+                        $bot->sendMessage(_("Si è verificato un problema nell'impostare la lingua da te richiesta"), $keyboard);
                     }
                 }
                 elseif(preg_match('/^('._('Nessuna camera').'|(\d+))$/',$update["text"],$words)){//Modifica stanza
@@ -2160,7 +2170,7 @@
                         $changeRoom = file_get_contents(TmpFileUser_path.'changeRoom.json');
 
                         if(!$permission["ChangeUserRoom"] or !$changeRoom){
-                            $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                            $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                             exit;
                         }
 
@@ -2191,11 +2201,11 @@
                         $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
 
                         if($db->updateRoom($_chatID,$words[1]) === false){
-                            $bot->sendReplyKeyboard(_("Non è stato possibile assegnare ").$user['FullName']._(" alla camera ").$words[1],$usersKeyboard);
+                            $bot->sendMessage(_("Non è stato possibile assegnare ").$user['FullName']._(" alla camera ").$words[1],$usersKeyboard);
                         }
                         else{
 
-                            $bot->sendReplyKeyboard(_('Camera modificata'), $usersKeyboard);
+                            $bot->sendMessage(_('Camera modificata'), $usersKeyboard);
 
                             $users = $db->getUserList(false);
                             $usersName = [];
@@ -2243,7 +2253,7 @@
 
                         $keyboardAddRoomInGroup = json_encode(['inline_keyboard'=> [[['text' => _('Aggiungi ad un gruppo'), 'callback_data' => "AddRoomInGroup-$roomNum"]]] ],JSON_PRETTY_PRINT);
 
-                        $msgResult = json_decode( $bot->sendReplyKeyboard($msg, $keyboardAddRoomInGroup),true);
+                        $msgResult = json_decode( $bot->sendMessage($msg, $keyboardAddRoomInGroup),true);
 
                         $messageInLineKeyboard = file_get_contents($messageInLineKeyboardPath);
                         $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);
@@ -2256,7 +2266,7 @@
                     $swapGroup = json_decode($swapGroup, true);
 
                     if($permission["SwapGroup"] == false or !in_array($update['text'], $swapGroup['AllowedSwap'])){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -2269,7 +2279,7 @@
                     $fromGroup = $words[1];
                     $toGroup = $words[3];
 
-                    $bot->sendReplyKeyboard(_('Attendi che ').$toName._(' accetti o rifiuti lo scambio'), $keyboard);
+                    $bot->sendMessage(_('Attendi che ').$toName._(' accetti o rifiuti lo scambio'), $keyboard);
 
                     $file['From'] = $from;
                     $file['To'] = $to;
@@ -2297,13 +2307,13 @@
                                         }";
 
                     $bot->setChatID($to);
-                    $bot->sendReplyKeyboard($fromName._(' ti propone di passare da ').$toGroup._(' a ').$fromGroup, $keyboardYesNoSwap);
+                    $bot->sendMessage($fromName._(' ti propone di passare da ').$toGroup._(' a ').$fromGroup, $keyboardYesNoSwap);
 
                     unlink(TmpFileUser_path.'swapGroup.json');
                 }
                 elseif(preg_match("/^(\/broadcast)(\s+)(.*)$/",$update["text"],$words)){
                     if($permission["BroadcastMsg"] == false){
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
@@ -2316,10 +2326,10 @@
                     sendNotification($_users, $words[3],$bot);
                 }
                 elseif($update["text"] == "/start"){
-                    $bot->sendReplyKeyboard(_("Bentornato, come posso aiutarti?"),$keyboard);
+                    $bot->sendMessage(_("Bentornato, come posso aiutarti?"),$keyboard);
                 }
                 elseif($update["text"] == "/menu" or $update["text"] == "\u{1F3E1}"){
-                    $bot->sendReplyKeyboard("Menù",$keyboard);
+                    $bot->sendMessage("Menù",$keyboard);
 
                     $files = glob(TmpFileUser_path.'*'); // get all file names
 
@@ -2341,7 +2351,7 @@
                         sendUser($_user, $permission, $messageInLineKeyboardPath);
 
                         if(!$db->insertUserInGroup($purpose['ChatID'], $update['text'])){
-                            $bot->sendReplyKeyboard(_("Non è stato possibile inserire l'utente nel gruppo ").$update['text'],$keyboard);
+                            $bot->sendMessage(_("Non è stato possibile inserire l'utente nel gruppo ").$update['text'],$keyboard);
                         }
                         else{
 
@@ -2352,7 +2362,7 @@
                             }
                             $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
 
-                            $bot->sendReplyKeyboard($_user['FullName']._(" inserito nel gruppo ").$update['text'],$usersKeyboard);
+                            $bot->sendMessage($_user['FullName']._(" inserito nel gruppo ").$update['text'],$usersKeyboard);
 
                             $bot->setChatID($purpose['ChatID']);
                             $bot->sendMessage(_("Sei stato inserito nel gruppo ").$update['text']);
@@ -2365,7 +2375,7 @@
                         sendUser($_user, $permission, $messageInLineKeyboardPath);
 
                         if(!$db->removeUserFromGroup($purpose['ChatID'], $update['text'])){
-                            $bot->sendReplyKeyboard(_("Non è stato possibile rimuovere l'utente dal gruppo ").$update['text'],$keyboard);
+                            $bot->sendMessage(_("Non è stato possibile rimuovere l'utente dal gruppo ").$update['text'],$keyboard);
                         }
                         else{
 
@@ -2375,7 +2385,7 @@
                                 $usersName[] = $row['FullName'];
                             }
                             $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
-                            $bot->sendReplyKeyboard($_user['FullName']._(" rimosso dal gruppo ").$update['text'],$usersKeyboard);
+                            $bot->sendMessage($_user['FullName']._(" rimosso dal gruppo ").$update['text'],$usersKeyboard);
 
                             $bot->setChatID($purpose['ChatID']);
                             $bot->sendMessage(_("Sei stato rimosso dal gruppo ").$update['text']);
@@ -2417,7 +2427,7 @@
 
                         $bot->setChatID($myChatID);
                         $userInGroup = $db->getUserInGroup($update['text']);
-                        $bot->sendReplyKeyboard(userInGroup($update['text'], $userInGroup), $roomsKeyboard);
+                        $bot->sendMessage(userInGroup($update['text'], $userInGroup), $roomsKeyboard);
 
                         unlink(TmpFileUser_path.'selectGroup.json');
                     }
@@ -2426,7 +2436,7 @@
                         $bot->sendMessage(userInGroup($update["text"],$userList));
                     }
                 }
-                elseif($db->getUser($db->getChatID($update["text"])) != false){
+                elseif(!empty($db->getChatID($update["text"])) and $db->getUser($db->getChatID($update["text"])) != false){
 
                     $selectType = file_get_contents(TmpFileUser_path.'selectUser.json');
                     $selectType = json_decode($selectType, true);
@@ -2438,7 +2448,7 @@
                     }
                     elseif($selectType['Type'] == 'SelectUserForSwapTurn'){
                         if($permission["SwapGroup"] == false){
-                            $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                            $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                             exit;
                         }
 
@@ -2468,11 +2478,11 @@
                             file_put_contents(TmpFileUser_path.'swapGroup.json', json_encode($swapGroup, JSON_PRETTY_PRINT));
 
                             $swapKeyboard = createUserKeyboard($buttonText,[[['text' => "\u{1F3E1}"]]]);
-                            $bot->sendReplyKeyboard(_('Scegli lo scambio da fare:'), $swapKeyboard);
+                            $bot->sendMessage(_('Scegli lo scambio da fare:'), $swapKeyboard);
                         }
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
 
                         $files = glob(TmpFileUser_path . '*'); // get all file names
                         foreach ($files as $file) { // iterate files
@@ -2588,7 +2598,7 @@
                         $bot->sendMessage(_("Nelle date successive i turni verranno eseguiti ciclicamente dai gruppi nell'ordine mostrato"));
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
 
                         $files = glob(TmpFileUser_path . '*'); // get all file names
                         foreach ($files as $file) { // iterate files
@@ -2599,22 +2609,12 @@
                     }
                 }
                 else {
-
-                    //Easter egg
-                    if($update['text'] == 'Sandro'){
-                        $bot->sendMessage('Fanculo Sandro');
-                    }
-                    elseif($update['text'] == 'Alex 11:11'){
-                        $bot->sendMessage('Per stupidità è entrato per ignoranza uscirà');
-                    }
-                    elseif($update['text'] == 'Ressa 13:11'){
-                        $bot->sendMessage('Questo è il mio piatto offerto in incastro per voi');
-                    }
-                    elseif($update['text'] == 'Ressa 2:04'){
-                        $bot->sendMessage('Non immortalarmi non posso essere immortalato');
+                    $quote = $db->getQuoteByMsg($update['text']);
+                    if(!empty($quote)){
+                        $bot->sendMessage($quote['Response']);
                     }
                     else{
-                        $bot->sendReplyKeyboard(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
                     }
 
                     $files = glob(TmpFileUser_path . '*'); // get all file names
@@ -2697,7 +2697,7 @@ function checkNewGuestInput(string $text, int $chatID, TelegramBot  $bot, Giulie
             file_put_contents($fileName, json_encode($ospite));
 
             if($ospite["CheckInDate"] < strtotime('+2 days')){
-                $bot->sendReplyKeyboard(_("Registrazione non riuscita, l'ospite deve essere registrato e confermato con 2 giorni d'anticipo, prova a ricontrollare le date inserite"),$keyboard);
+                $bot->sendMessage(_("Registrazione non riuscita, l'ospite deve essere registrato e confermato con 2 giorni d'anticipo, prova a ricontrollare le date inserite"),$keyboard);
                 unlink($fileName);
             }
             else{
@@ -2716,7 +2716,7 @@ function checkNewGuestInput(string $text, int $chatID, TelegramBot  $bot, Giulie
                         $msg .= strftime('%d %B %Y',$value).PHP_EOL;
                     }
 
-                    $bot->sendReplyKeyboard($msg,$keyboard);
+                    $bot->sendMessage($msg,$keyboard);
                     unlink($fileName);
                     exit;
                 }
@@ -2732,7 +2732,7 @@ function checkNewGuestInput(string $text, int $chatID, TelegramBot  $bot, Giulie
                     while($row = $guestList->fetch_assoc()){
                         $msg .= " - ".$row["Name"]._(" dal ").$row["CheckInDate"]._(" al ").$row["LeavingDate"].",\n";
                     }
-                    $bot->sendReplyKeyboard($msg,$keyboard);
+                    $bot->sendMessage($msg,$keyboard);
 
                     unlink($fileName);
                     exit;
@@ -2747,7 +2747,7 @@ function checkNewGuestInput(string $text, int $chatID, TelegramBot  $bot, Giulie
                     if($roommateList->num_rows == 0){
                         if(guestInput($fileName) === true){
                             $bot->setChatID($chatID);
-                            $bot->sendReplyKeyboard(_("Ospite confermato e registrato"), $keyboard);
+                            $bot->sendMessage(_("Ospite confermato e registrato"), $keyboard);
                         }
                         unlink($fileName);
                     }
@@ -2779,7 +2779,7 @@ function checkNewGuestInput(string $text, int $chatID, TelegramBot  $bot, Giulie
                             $message = _("Il/La tuo/a compagno/a di stanza ").$user["FullName"]._(" vorrebbe ospitare qualcuno nella vostra camera dal ").$arrivo._(" al ").$partenza._(", per te va bene?");
 
                             $bot->setChatID($roommate["ChatID"]);
-                            $msgResult = json_decode($bot->sendReplyKeyboard($message, $keyboardYesNo),true);
+                            $msgResult = json_decode($bot->sendMessage($message, $keyboardYesNo),true);
 
                             $userMsgID[$roommate["ChatID"]] = $msgResult["result"]["message_id"];
                         }
@@ -2789,15 +2789,15 @@ function checkNewGuestInput(string $text, int $chatID, TelegramBot  $bot, Giulie
 
                         $bot->setChatID($chatID);
                         if($roommateList->num_rows >1){
-                            $bot->sendReplyKeyboard(_("Attendi la conferma dei tuoi compagni di stanza, ti arriverà una notifica quando confermeranno"), $keyboard);
+                            $bot->sendMessage(_("Attendi la conferma dei tuoi compagni di stanza, ti arriverà una notifica quando confermeranno"), $keyboard);
                         }
                         else{
-                            $bot->sendReplyKeyboard(_("Attendi la conferma del tuo compagno di stanza, ti arriverà una notifica quando confermerà"), $keyboard);
+                            $bot->sendMessage(_("Attendi la conferma del tuo compagno di stanza, ti arriverà una notifica quando confermerà"), $keyboard);
                         }
                     }
                 }
                 else{
-                    $bot->sendReplyKeyboard(_("L'ospite risulta già registrato"), $keyboard);
+                    $bot->sendMessage(_("L'ospite risulta già registrato"), $keyboard);
                     unlink($fileName);
                 }
 
@@ -3039,7 +3039,7 @@ function sendMessageEditTypeOfTurn($typeOfTurn, $permission, $messageInLineKeybo
 
     if($permission['EditTypeOfTurn']){
 
-        $msgResult = json_decode($bot->sendReplyKeyboard($msg, $typeOfTurnEditKeyboard), true);
+        $msgResult = json_decode($bot->sendMessage($msg, $typeOfTurnEditKeyboard), true);
 
         $messageInLineKeyboard = file_get_contents($messageInLineKeyboardPath);
         $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);
@@ -3077,7 +3077,7 @@ function sendMessageEditGuest($guest, $permission, $messageInLineKeyboardPath){
         $bot->sendMessage($msg);
     }
     else{
-        $msgResult = json_decode($bot->sendReplyKeyboard($msg,$keyboardGuest),true);
+        $msgResult = json_decode($bot->sendMessage($msg,$keyboardGuest),true);
 
         $messageInLineKeyboard = file_get_contents($messageInLineKeyboardPath);
         $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);
@@ -3163,7 +3163,7 @@ function sendUser($user, $permission, $messageInLineKeyboardPath){
     $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
 
     $keyboardUser = keyboardEditUser($permission, $user);
-    $msgResult = json_decode($bot->sendReplyKeyboard($msg, $keyboardUser),true);
+    $msgResult = json_decode($bot->sendMessage($msg, $keyboardUser),true);
 
     $messageInLineKeyboard = file_get_contents($messageInLineKeyboardPath);
     $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);
