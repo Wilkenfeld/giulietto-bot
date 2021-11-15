@@ -31,6 +31,7 @@ class GiuliettoDB
      */
     public function __construct(mysqli $mysqlConn){
         $this->_conn = $mysqlConn;
+        $this->_conn->set_charset("utf8mb4");
     }
 
     /**
