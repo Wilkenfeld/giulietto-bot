@@ -947,7 +947,7 @@
                         $bot->sendMessage(_("Non è stato possibile aggiornare l'e-mail, controlla che sia in un formato valido."), $keyboard);
                     }
                     else{
-                        $bot->sendMessage(_("E-mail aggiornata, la tua nuova e-mail è: ").$update["text"], $keyboard);
+                        $bot->sendMessage(_("E-mail aggiornata, la tua nuova e-mail è: ").strtolower($update["text"]), $keyboard);
                     }
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia il numero di posti della camera:')){
