@@ -161,7 +161,7 @@
          *
          */
         public function sendMessage(string $messageText, string $replyMarkup = null, string $parseMode = null){
-            $url = $this->url."/sendMessage?chat_id=".$this->chatID."&text=".urlencode(utf8_encode($messageText));
+            $url = $this->url."/sendMessage?chat_id=".$this->chatID."&text=".urlencode($messageText);
 
             if(!is_null($replyMarkup)){
                 $url .= "&reply_markup=".urlencode($replyMarkup);;
