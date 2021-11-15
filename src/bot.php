@@ -927,14 +927,23 @@
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
-                    if(downloadDocument(FILES_PATH,$update["document"]["file_id"],"Linee_guida")){
-                        $bot->sendMessage(_("Nuove linee guida caricate"), $keyboard);
-                    }
-                    else
-                    {
-                        $bot->sendMessage(_("Si è verificato un errore nel salvataggio del file"), $keyboard);
-                    }
 
+                    if(empty($update["document"]["file_id"])){
+                        $bot->sendMessage(_('Invia il file dalla sezione file di telegram'));
+                        $bot->sendMessageForceReply(_("Invia il file con le nuove linee guida:"));
+                    }
+                    elseif(pathinfo($update["document"]["file_name"], PATHINFO_EXTENSION) == 'pdf'){
+                        if(downloadDocument(FILES_PATH,$update["document"]["file_id"],"Linee_guida")){
+                            $bot->sendMessage(_("Nuove linee guida caricate"), $keyboard);
+                        }
+                        else
+                        {
+                            $bot->sendMessage(_("Si è verificato un errore nel salvataggio del file"), $keyboard);
+                        }
+                    }
+                    else{
+                        $bot->sendMessage(_('Il file deve essere in formato pdf'));
+                    }
                 }
                 elseif($update["reply_to_message"]["text"] == _("Invia la tua nuova email:")){
 
