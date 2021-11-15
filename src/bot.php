@@ -238,10 +238,10 @@
                 }
                 elseif($calendar["Type"] == 'NewGuest') {
                     //inserimento della data di arrivo in struttura
-                    checkNewGuestInput($calendar["FirstDate"], $chatID, $bot, $db, $keyboard);
+                    checkNewGuestInput($calendar["FirstDate"], $chatID, $keyboard);
 
                     //inserimento della data di partenza dalla struttura
-                    checkNewGuestInput($calendar["SecondDate"], $chatID, $bot, $db, $keyboard);
+                    checkNewGuestInput($calendar["SecondDate"], $chatID, $keyboard);
                 }
                 elseif($calendar['Type'] == 'UpdateGuest'){
 
@@ -453,8 +453,10 @@
                         $users = $db->getAllUsersForNotification('NewAbsence');
 
                         while($row = $users->fetch_assoc()){
-                            $bot->setChatID($row['ChatID']);
-                            $bot->sendMessage($user['FullName'].' '._('ha modificato la sua assenza dal').' '.strftime('%d %h %Y',$oldAbsence['LeavingDate']).' '._('al').' '. strftime('%d %h %Y',$oldAbsence['ReturnDate']).' '._(', ora sarà assente dal').' '.strftime('%d %h %Y',$leavingDate).' '._('al').' '. strftime('%d %h %Y',$returnDate));
+                            if($row['ChatID'] !== $chatID){
+                                $bot->setChatID($row['ChatID']);
+                                $bot->sendMessage($user['FullName'].' '._('ha modificato la sua assenza dal').' '.strftime('%d %h %Y',$oldAbsence['LeavingDate']).' '._('al').' '. strftime('%d %h %Y',$oldAbsence['ReturnDate']).' '._(', ora sarà assente dal').' '.strftime('%d %h %Y',$leavingDate).' '._('al').' '. strftime('%d %h %Y',$returnDate));
+                            }
                         }
                     }
                     else{
@@ -971,7 +973,7 @@
                     }
 
                     $text = $update["text"];
-                    checkNewGuestInput($text, $chatID, $bot, $db, $keyboard);
+                    checkNewGuestInput($text, $chatID, $keyboard);
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi Nome e Cognome dell'ospite da eliminare:")) {
 
@@ -1002,7 +1004,7 @@
 
                     //Prende l'ultimo elemento dell' array associativo che contiene l'immagine alla risoluzione più alta
                     $text = end($update["photo"]);
-                    checkNewGuestInput($text["file_id"], $chatID, $bot, $db, $keyboard);
+                    checkNewGuestInput($text["file_id"], $chatID, $keyboard);
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scatta una foto del retro del documento dell'ospite ed inviala:")){
 
@@ -1013,7 +1015,7 @@
 
                     //Prende l'ultimo elemento dell' array associativo che contiene l'immagine alla risoluzione più alta
                     $text = end($update["photo"]);
-                    checkNewGuestInput($text["file_id"], $chatID, $bot, $db, $keyboard);
+                    checkNewGuestInput($text["file_id"], $chatID, $keyboard);
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia il nuovo nome:')){
                     if($permission["ChangeNameUser"] == false){
@@ -2640,11 +2642,12 @@
 /**
  * @param $text string
  * @param $chatID int
- * @param $bot TelegramBot
- * @param $db GiuliettoDB
  * @param $keyboard string
  */
-function checkNewGuestInput(string $text, int $chatID, TelegramBot  $bot, GiuliettoDB $db, string $keyboard){
+function checkNewGuestInput(string $text, int $chatID, string $keyboard){
+
+    global $bot;
+    global $db;
 
     //file temporaneo contenente i dati dell'ospite da inserire;
     $fileName = TmpFileUser_path."tmpGuest.json";
@@ -2828,7 +2831,7 @@ function guestInput($guest_file){
     $documento[0] = downloadDocument(Guest_document.$fileFolderName, $ospite['FrontDocument'], "Fronte_$fileFolderName");
     $documento[1] = downloadDocument(Guest_document.$fileFolderName, $ospite['BackDocument'], "Retro_$fileFolderName");
 
-    if($db->insertGuest($ospite["ChatID"], $ospite["Name"], date('Y-m-d',$ospite["CheckInDate"]), date('Y-m-d',$ospite["LeavingDate"]), $ospite["Room"], $ospite["RegistrationDate"])){
+    if($db->insertGuest($ospite["ChatID"], $ospite["Name"], date('Y-m-d',$ospite["CheckInDate"]), date('Y-m-d',$ospite["LeavingDate"]), $ospite["Room"])){
         $arrivo = date("d-m-Y", $ospite["CheckInDate"]);
         $partenza = date("d-m-Y", $ospite["LeavingDate"]);
 
