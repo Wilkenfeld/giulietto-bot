@@ -2119,9 +2119,14 @@
                             $userList[$row['ChatID']] = $row['FullName'];
                         }
                     }
-                    $userKeyboard = createUserKeyboard($userList,[[['text' => "\u{1F3E1}"]]]);
 
-                    $bot->sendMessage(_("Con chi vuoi fare a scambio di gruppo?"), $userKeyboard);
+                    if(empty($userList)){
+                        $bot->sendMessage(_('Nessun utente disponibile'));
+                    }
+                    else{
+                        $userKeyboard = createUserKeyboard($userList,[[['text' => "\u{1F3E1}"]]]);
+                        $bot->sendMessage(_("Con chi vuoi fare a scambio di gruppo?"), $userKeyboard);
+                    }
                 }
                 elseif($update["text"] == _("Riorganizza Gruppi")." \u{1F500}"){
                     if($permission["RearrangeGroups"] == false){
