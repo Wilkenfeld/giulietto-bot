@@ -2456,7 +2456,7 @@
                         $bot->sendMessage(userInGroup($update["text"],$userList));
                     }
                 }
-                elseif(!empty($db->getChatID($update["text"])) and $db->getUser($db->getChatID($update["text"])) != false){
+                elseif(file_exists(TmpFileUser_path.'selectUser.json') and !empty($db->getChatID($update["text"])) and $db->getUser($db->getChatID($update["text"])) != false){
 
                     $selectType = file_get_contents(TmpFileUser_path.'selectUser.json');
                     $selectType = json_decode($selectType, true);
