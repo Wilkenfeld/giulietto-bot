@@ -1330,12 +1330,7 @@ class GiuliettoDB
         try{
             $turn = $this->getTypeOfTurn($typeOfTurn);
 
-            if(is_null($turn["LastExecution"]) or  $turn["LastExecution"] == date("Y-m-d") ){
-                $next += $turn["CurrentStep"];
-            }
-            else{
-                $next += $turn["CurrentStep"]+1;
-            }
+            $next += $turn["CurrentStep"]+1;
 
             if($next > $this->getStepNumOfTurn($typeOfTurn)-1){
                 $next = $next%$this->getStepNumOfTurn($typeOfTurn);
