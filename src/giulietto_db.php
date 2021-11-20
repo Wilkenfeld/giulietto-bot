@@ -1326,11 +1326,11 @@ class GiuliettoDB
      * @param $next int
      * @return array|false|null
      */
-    public function getGroupWillDoTheNextTurn(string $typeOfTurn, int $next = 0){
+    public function getGroupWillDoTheNextTurn(string $typeOfTurn, int $next = 1){
         try{
             $turn = $this->getTypeOfTurn($typeOfTurn);
 
-            $next += $turn["CurrentStep"]+1;
+            $next += $turn["CurrentStep"];
 
             if($next > $this->getStepNumOfTurn($typeOfTurn)-1){
                 $next = $next%$this->getStepNumOfTurn($typeOfTurn);
