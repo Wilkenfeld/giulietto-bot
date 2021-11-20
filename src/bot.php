@@ -2541,10 +2541,11 @@
                         $lastExecution = $typeOfTurn["LastExecution"];
                         $firstExecution = $typeOfTurn["FirstExecution"];
                         $turnName = $typeOfTurn["Name"];
+                        $frequency = $typeOfTurn['Frequency'];
 
                         if(is_null($lastExecution)){
                             $msg = "- - - - - -  "._("Turno")." $turnName  - - - - - - \n";
-                            $msg.= _('Il turno inizierà il').' '.strftime('%e %h %Y', strtotime($firstExecution)).PHP_EOL._('con il gruppo').' '.$db->getGroupWillDoTheNextTurn($turnName)["Squad"].PHP_EOL;
+                            $msg.= _('Il turno inizierà il').' '.strftime('%e %h %Y', strtotime($firstExecution)).PHP_EOL._('con il gruppo').' '.$db->getGroupWillDoTheNextTurn($turnName,0)["Squad"].PHP_EOL;
                         }
                         else{
                             $remainingDays = 0;
@@ -2577,9 +2578,9 @@
                             }
 
                             if($remainingDays == 0){
-                                $msg.= _("Oggi: ").$db->getGroupWillDoTheNextTurn($turnName)["Squad"].PHP_EOL;
+                                $msg.= _("Oggi: ").$db->getGroupWillDoTheNextTurn($turnName,0)["Squad"].PHP_EOL;
                             }else{
-                                $msg.= _("Tra")." $remainingDays "._("giorni: ").$db->getGroupWillDoTheNextTurn($turnName)["Squad"].PHP_EOL;
+                                $msg.= _("Tra")." $remainingDays "._("giorni: ").$db->getGroupWillDoTheNextTurn($turnName,0)["Squad"].PHP_EOL;
                             }
 
                             $myGroups = $db->getGroupsByUser($chatID);
@@ -2590,9 +2591,12 @@
                                 }
                             }
 
-                            for($i=1; $i<$db->getStepNumOfTurn($turnName); $i++){
-                                if(in_array($db->getGroupWillDoTheNextTurn($turnName, $i)['Squad'], $_myGroups)){
-                                    $msg .= _("Tuo prossimo: ").strftime('%e %h %Y', strtotime("+$i days")).PHP_EOL;
+                            for($i=1; $i<=$db->getStepNumOfTurn($turnName); $i++){
+
+                                $group =$db->getGroupWillDoTheNextTurn($turnName, $i)['Squad'];
+                                if(in_array($group, $_myGroups)){
+                                    $days = $i*$frequency;
+                                    $msg .= _("Tuo prossimo: ").strftime('%e %h %Y', strtotime("+$days days")).PHP_EOL;
                                     break;
                                 }
                             }
@@ -2623,7 +2627,7 @@
                                 $days += date_diff(new DateTime($firstExecution),new DateTime(date("Y-m-d")))->days;
                             }
                             else{
-                                $days += date_diff(new DateTime($lastExecution),new DateTime(date("Y-m-d")))->days +1;
+                                $days += date_diff(new DateTime($lastExecution),new DateTime(date("Y-m-d")))->days;
                             }
 
                             $msg .= strftime('%e %h %Y', strtotime("+$days days")).': '.$db->getGroupWillDoTheNextTurn($turnName,$i)["Squad"].PHP_EOL;
