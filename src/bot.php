@@ -1684,8 +1684,11 @@
                         }
                         else{
                             $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => "\u{1F3E1}"]] ]);
-
                         }
+
+                        $file['Type'] = 'viewUserInGroup';
+                        file_put_contents(TmpFileUser_path.'selectGroup.json', json_encode($file, JSON_PRETTY_PRINT));
+
                         $bot->sendMessage(_("Seleziona un gruppo per vederne i membri:"), $groupKeyboard);
                     }
                 }
@@ -2364,9 +2367,9 @@
                     $purpose = file_get_contents(TmpFileUser_path.'selectGroup.json');
                     $purpose = json_decode($purpose, true);
 
-                    $_user = $db->getUser($purpose['ChatID']);
-
                     if($purpose['Type'] == 'insertUser'){
+
+                        $_user = $db->getUser($purpose['ChatID']);
 
                         sendUser($_user, $permission, $messageInLineKeyboardPath);
 
@@ -2392,6 +2395,9 @@
                         unlink(TmpFileUser_path.'selectGroup.json');
                     }
                     elseif($purpose['Type'] == 'deleteUserFromGroup'){
+
+                        $_user = $db->getUser($purpose['ChatID']);
+
                         sendUser($_user, $permission, $messageInLineKeyboardPath);
 
                         if(!$db->removeUserFromGroup($purpose['ChatID'], $update['text'])){
@@ -2411,7 +2417,7 @@
                             $bot->sendMessage(_("Sei stato rimosso dal gruppo ").$update['text']);
                         }
 
-                        unlink(TmpFileUser_path.'insetDeleteGroupUser.json');
+                        unlink(TmpFileUser_path.'selectGroup.json');
                     }
                     elseif($purpose['Type'] == 'insertRoom'){
                         $userInRoom = $db->getUserInRoom($purpose['Room']);
@@ -2451,9 +2457,19 @@
 
                         unlink(TmpFileUser_path.'selectGroup.json');
                     }
-                    else{
+                    elseif($purpose['Type'] == 'viewUserInGroup'){
                         $userList = $db->getUserInGroup($update["text"]);
                         $bot->sendMessage(userInGroup($update["text"],$userList));
+                    }
+                    else{
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
+
+                        $files = glob(TmpFileUser_path . '*'); // get all file names
+                        foreach ($files as $file) { // iterate files
+                            if (is_file($file) and $file !== 'tmpGuest.json') {
+                                unlink($file); // delete file
+                            }
+                        }
                     }
                 }
                 elseif(file_exists(TmpFileUser_path.'selectUser.json') and !empty($db->getChatID($update["text"])) and $db->getUser($db->getChatID($update["text"])) != false){
