@@ -2541,7 +2541,6 @@
                         $lastExecution = $typeOfTurn["LastExecution"];
                         $firstExecution = $typeOfTurn["FirstExecution"];
                         $turnName = $typeOfTurn["Name"];
-                        $frequency = $typeOfTurn['Frequency'];
 
                         if(is_null($lastExecution)){
                             $msg = "- - - - - -  "._("Turno")." $turnName  - - - - - - \n";
@@ -2591,11 +2590,11 @@
                                 }
                             }
 
-                            for($i=1; $i<=$db->getStepNumOfTurn($turnName); $i++){
+                            for($i=0; $i<=$db->getStepNumOfTurn($turnName); $i++){
 
                                 $group =$db->getGroupWillDoTheNextTurn($turnName, $i)['Squad'];
                                 if(in_array($group, $_myGroups)){
-                                    $days = $i*$frequency;
+                                    $days = ($i*$frequency) + $remainingDays;
                                     $msg .= _("Tuo prossimo: ").strftime('%e %h %Y', strtotime("+$days days")).PHP_EOL;
                                     break;
                                 }
@@ -2619,16 +2618,13 @@
 
                         $msg = "- - - - - -  "._("Turno")." $turnName  - - - - - -\n";
 
+                        $remainingDays = 0;
+                        if($lastExecution != date("Y-m-d")){
+                            $remainingDays = date_diff(new DateTime(date("Y-m-d")), new DateTime(date("Y-m-d", strtotime("$lastExecution + $frequency days"))))->days;
+                        }
+
                         for($i=0; $i<$db->getStepNumOfTurn($turnName); $i++){
-
-                            $days = $i*$frequency;
-
-                            if(is_null($lastExecution)){
-                                $days += date_diff(new DateTime($firstExecution),new DateTime(date("Y-m-d")))->days;
-                            }
-                            else{
-                                $days += date_diff(new DateTime($lastExecution),new DateTime(date("Y-m-d")))->days;
-                            }
+                            $days = ($i*$frequency) + $remainingDays;
 
                             $msg .= strftime('%e %h %Y', strtotime("+$days days")).': '.$db->getGroupWillDoTheNextTurn($turnName,$i)["Squad"].PHP_EOL;
                         }
