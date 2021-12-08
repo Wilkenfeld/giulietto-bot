@@ -64,7 +64,10 @@ function notificaTurni($bot, $db, $log){
                     $log->append($user['FullName'].' assente');
                 }
             }
-            $db->incStep($turn['Name']);
+
+            if(!is_null($turn['LastExecution']) and $turn["FirstExecution"] != date('Y-m-d')){
+                $db->incStep($turn['Name']);
+            }
         }
     }
 }
