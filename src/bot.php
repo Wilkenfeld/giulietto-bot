@@ -2620,22 +2620,20 @@
                                 }
                             }
 
-                            /*for($i=0; $i<=$db->getStepNumOfTurn($turnName); $i++){
-
+                            for($i=1; $i<=$db->getStepNumOfTurn($turnName); $i++){
                                 $group =$db->getGroupWillDoTheNextTurn($turnName, $i)['Squad'];
+
                                 if(in_array($group, $_myGroups)){
-                                    $days = ($i*$frequency) + $remainingDays;
+                                    $days = ($i*$frequency) - $passedDays;
                                     $msg .= _("Tuo prossimo: ").strftime('%e %h %Y', strtotime("+$days days")).PHP_EOL;
                                     break;
                                 }
-                            }*/
-
+                            }
                         }
 
                         $msg .= "- - - - - - - - - - - - - - - - - - - - - - - -\n";
 
                         $bot->sendMessage($msg);
-
                     }
                     elseif($file['Type'] == 'Edit'){
                         sendMessageEditTypeOfTurn($db->getTypeOfTurn($update["text"]), $permission, $messageInLineKeyboardPath);
