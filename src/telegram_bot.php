@@ -159,6 +159,8 @@
          * @param string|null $replyMarkup
          * @param string|null $parseMode Accepted value is MarkdownV2, HTML and Markdown
          *
+         * @return string|false
+         *
          */
         public function sendMessage(string $messageText, string $replyMarkup = null, string $parseMode = null){
             $url = $this->url."/sendMessage?chat_id=".$this->chatID."&text=".urlencode($messageText);
