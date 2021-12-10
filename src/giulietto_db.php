@@ -1475,4 +1475,74 @@ class GiuliettoDB
             return false;
         }
     }
+
+//Maintenance
+
+    public function reportsMaintenance(int $chatID, string $description): bool
+    {
+        try{
+            $query = "INSERT INTO Report(WhoReports, Description, ReportsDateTime) VALUES (?,?,NOW())";
+            $stmt = $this->_conn->prepare($query);
+            $stmt->bind_param('is', $chatID, $description);
+
+            return $stmt->execute();
+        }
+        catch(Exception $e) {
+            $this->_log->append($e->getCode() . " " . $e->getMessage() . "\n" . $e->getTraceAsString(), "error");
+            return false;
+        }
+    }
+
+    public function getReport(bool $resolved = false){
+        try{
+            if($resolved){
+                $query = "SELECT * FROM Report R WHERE R.ResolutionDateTime IS NOT NULL;";
+            }
+            else{
+                $query = "SELECT * FROM Report R WHERE R.ResolutionDateTime IS NULL;";
+            }
+
+            $stmt = $this->_conn->prepare($query);
+            $stmt->execute();
+
+            return $stmt->get_result();
+        }
+        catch (Exception $e){
+            $this->_log->append($e->getCode() . " " . $e->getMessage() . "\n" . $e->getTraceAsString(), "error");
+            return false;
+        }
+    }
+
+    public function deleteReport(int $id): bool
+    {
+        try{
+            $query = "DELETE FROM Report R WHERE R.ID = ?;";
+            $stmt = $this->_conn->prepare($query);
+            $stmt->bind_param('i', $id);
+
+            return $stmt->execute();
+        }
+        catch(Exception $e) {
+            $this->_log->append($e->getCode() . " " . $e->getMessage() . "\n" . $e->getTraceAsString(), "error");
+            return false;
+        }
+    }
+
+    public function setMaintenanceAsDone(int $id, int $whoResolve): bool
+    {
+        try{
+            $query = "UPDATE Report SET WhoResolve = ?, ResolutionDateTime = NOW() WHERE ID = ?;";
+            $stmt = $this->_conn->prepare($query);
+            $stmt->bind_param('ii', $id, $whoResolve);
+
+            return $stmt->execute();
+        }
+        catch(Exception $e) {
+            $this->_log->append($e->getCode() . " " . $e->getMessage() . "\n" . $e->getTraceAsString(), "error");
+            return false;
+        }
+    }
+
+
+
 }
