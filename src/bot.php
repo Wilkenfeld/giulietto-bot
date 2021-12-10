@@ -2246,7 +2246,7 @@
                         file_put_contents($messageInLineKeyboardPath ,json_encode($messageInLineKeyboard, JSON_PRETTY_PRINT));
                     }
                 }
-                elseif($update["text"] ==  _("Risolte")){
+                elseif($update["text"] == _("Risolte")){
                     $reportsSolved = $db->getReport(true);
 
                     if($reportsSolved->num_rows == 0){
@@ -2388,6 +2388,9 @@
                         $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);
                         $messageInLineKeyboard[$msgResult["result"]["message_id"]] = $msg;
                         file_put_contents($messageInLineKeyboardPath ,json_encode($messageInLineKeyboard, JSON_PRETTY_PRINT));
+                    }
+                    else{
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
                     }
                 }
                 elseif(preg_match("/^([\w\s]+)( => )([\w\s]*)$/", $update['text'], $words) and array_key_exists($words[1],$db->getGroupList()) and array_key_exists($words[3],$db->getGroupList())){
