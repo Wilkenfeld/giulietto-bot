@@ -1516,7 +1516,7 @@ class GiuliettoDB
     public function deleteReport(int $id): bool
     {
         try{
-            $query = "DELETE FROM Report R WHERE R.ID = ?;";
+            $query = "DELETE FROM Report WHERE ID = ?;";
             $stmt = $this->_conn->prepare($query);
             $stmt->bind_param('i', $id);
 
