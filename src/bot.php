@@ -35,6 +35,8 @@
             "SwapGroup" => _("Scambia gruppo")." \u{1F503}",
             "RearrangeGroups" => _("Riorganizza Gruppi")." \u{1F500}",
             "TurnCalendar" => _("Calendario turni")." \u{1F5D3}",
+            "ReportsMaintenance" => _("Segnala")." \u{1F6A8}",
+            "ManageMaintenance" => _("Manutenzioni")." \u{1F6E0}"
         )
     );
 
@@ -856,6 +858,18 @@
                     $bot->sendMessage(_('Scegli in quale gruppo vuoi inserire gli utenti nella camera: '), $groupsKeyboard);
                 }
             }
+            elseif(preg_match("/^(deleteReport)(-)(\d+)$/",$update["data"],$words)){
+                if($permission['ManageMaintenance']){
+                    $bot->deleteMessage($callbackMessageID);
+                    $db->deleteReport($words[3]);
+                }
+            }
+            elseif(preg_match("/^(resolved)(-)(\d+)$/",$update["data"],$words)){
+                if($permission['ManageMaintenance']){
+                    $bot->deleteMessage($callbackMessageID);
+                    $db->setMaintenanceAsDone($bot->getChatID(),$words[3]);
+                }
+            }
         }
         else{
             $bot->sendMessage(_("Il tuo account è stato disabilitato, non ti sarà possibile utilizzare il bot fino a quando non verrà riattivato."));
@@ -1420,6 +1434,31 @@
                     }
 
                     unlink(TmpFileUser_path.'otp.json');
+                }
+                elseif($update["reply_to_message"]["text"] == _("Descrivi il problema:")){
+                    if($permission["ReportsMaintenance"] == false){
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    if($db->reportsMaintenance($chatID, $update["text"])){
+                        $bot->sendMessage(_("Segnalazione inviata"), $keyboard);
+
+                        $users = $db->getAllUsersForNotification('NewReport');
+
+                        $msg = "- - - - - "._("Nuova segnalazione")." - - - - -\n";
+                        $msg.= _("Segnalato da: ").$user['FullName'].PHP_EOL.PHP_EOL;
+                        $msg.= $update["text"].PHP_EOL;
+                        $msg.= "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+
+                        while($row = $users->fetch_assoc()){
+                            $bot->setChatID($row['ChatID']);
+                            $bot->sendMessage($msg);
+                        }
+                    }
+                    else{
+                        $bot->sendMessage(_("Si è verificato un errore nella registrazione della segnalazione"), $keyboard);
+                    }
                 }
                 elseif($update["text"] == _("Linee guida")." \u{1F4D6}") { //invia il pdf con le linee guida
                     if(file_exists(FILES_PATH."/Linee_guida.pdf")){
@@ -2159,6 +2198,73 @@
 
                     $bot->sendMessageForceReply(_('Scrivi il seguente codice per confermare:'));
                     $bot->sendMessage($otp['OTP']);*/
+                }
+                elseif($update["text"] == _("Segnala")." \u{1F6A8}"){
+                    if($permission["ReportsMaintenance"] == false){
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $bot->sendMessageForceReply(_("Descrivi il problema:"));
+                }
+                elseif($update["text"] == _("Manutenzioni")." \u{1F6E0}"){
+                    if($permission["ManageMaintenance"] == false){
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $bot->sendMessage(_("Quali manutenzioni vuoi visualizzare?"), createUserKeyboard([_("Da risolvere"), _("Risolte")],[[['text' => "\u{1F3E1}"]]]));
+                }
+                elseif($update["text"] == _("Da risolvere")){
+                    $reportsToDo = $db->getReport();
+
+                    if($reportsToDo->num_rows == 0){
+                        $bot->sendMessage(_("Nessuna manutenzione da fare"));
+                        exit;
+                    }
+
+                    $messageInLineKeyboard = file_get_contents($messageInLineKeyboardPath);
+                    $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);
+
+                    while($row = $reportsToDo->fetch_assoc()){
+
+                        $keyboardReport = [];
+
+                        $msg = "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+                        $msg.= _("Segnalato da: ").$db->getUser($row['WhoReports'])['FullName'].PHP_EOL;
+                        $msg.= _("Data segnalazione: ").date('d-m-Y G:i:s', strtotime($row['ReportsDateTime'])).PHP_EOL.PHP_EOL;
+                        $msg.= $row['Description'].PHP_EOL;
+                        $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+
+                        $keyboardReport[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteReport-".$row['ID']];
+                        $keyboardReport[] = ['text' => _('Risolta')." \u{2714}", 'callback_data' => "resolved-".$row['ID']];
+                        $keyboardReport = json_encode(['inline_keyboard'=> [$keyboardReport] ],JSON_PRETTY_PRINT);
+
+                        $msgResult = json_decode($bot->sendMessage($msg, $keyboardReport), true);
+
+                        $messageInLineKeyboard[$msgResult["result"]["message_id"]] = $msg;
+                        file_put_contents($messageInLineKeyboardPath ,json_encode($messageInLineKeyboard, JSON_PRETTY_PRINT));
+                    }
+                }
+                elseif($update["text"] ==  _("Risolte")){
+                    $reportsSolved = $db->getReport(true);
+
+                    if($reportsSolved->num_rows == 0){
+                        $bot->sendMessage(_("Nessuna manutenzione risolta"));
+                        exit;
+                    }
+
+                    while($row = $reportsSolved->fetch_assoc()){
+                        $msg = "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+                        $msg.= _("Segnalato da: ").$db->getUser($row['WhoReports'])['FullName'].PHP_EOL;
+                        $msg.= _("Data segnalazione: ").date('d-m-Y G:i:s', strtotime($row['ReportsDateTime'])).PHP_EOL;
+                        $msg.= _("Risolto da: ").$db->getUser($row['WhoResolve'])['FullName'].PHP_EOL;
+                        $msg.= _("Data risoluzione: ").date('d-m-Y G:i:s', strtotime($row['ResolutionDateTime'])).PHP_EOL.PHP_EOL;
+                        $msg.= $row['Description'].PHP_EOL;
+                        $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+
+                        $bot->sendMessage($msg);
+                    }
                 }
                 elseif($update["text"] == _("Cambia lingua")." \u{1F524}"){
                     $langArrayKeyboard[] = [['text' => _("Italiano")]];
