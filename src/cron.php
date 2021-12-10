@@ -80,7 +80,7 @@ function rientroInquilino($bot, $db){
     $absence = $db->getIncomingRoomer(date('Y-m-d'));
 
     if($absence->num_rows > 0){
-        $msg = "- - - Oggi ritorna - - -".PHP_EOL.PHP_EOL;
+        $msg = "- - - - - - - - - - Oggi ritorna - - - - - - - - - -".PHP_EOL.PHP_EOL;
         while($row = $absence->fetch_assoc()){
             $msg.= $row["FullName"]." - Camera ".$row["Room"].PHP_EOL;
             $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
