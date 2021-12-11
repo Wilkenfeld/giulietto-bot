@@ -884,16 +884,7 @@
         }
         unlink($messageInLineKeyboardPath);
 
-        if($update["chat"]["type"] === "group"){
-
-            foreach($update["new_chat_members"] as $usr){
-                if($usr["username"] == 'Giulietto2_bot'){
-                    $db->insertUser($update['chat']['id'],$update['chat']['title'],null,null,$update["chat"]["type"], 'Groups', 'it');
-                }
-            }
-
-        }
-        elseif($update["chat"]["type"] === "private"){
+        if($update["chat"]["type"] === "private"){
 
             //Change account type
             if(preg_match('/^(pw|Pw|PW|pW)(\s+)(\w+)$/',$update["text"],$words)){
