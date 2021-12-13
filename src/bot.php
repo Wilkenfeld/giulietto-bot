@@ -307,11 +307,14 @@
                         if(empty($guest)){
                             //Se l'utente non ha un compagno di stanza la registrazione viene eseguita direttamente senza richiedere la conferma al suo compagno
                             if($roommateList->num_rows == 0){
-                                if($db->updateGuest($file['User'],$file["GuestName"], date('Y-m-d',$file['CheckInDate']),  date('Y-m-d',$file['LeavingDate']), date('Y-m-d',$calendar['FirstDate']), date('Y-m-d',$calendar['SecondDate']))){
+                                if($db->updateGuest($file['User'],$file["GuestName"], date('Y-m-d',$file['CheckInDate']), date('Y-m-d',$file['LeavingDate']), date('Y-m-d',$calendar['FirstDate']), date('Y-m-d',$calendar['SecondDate']))){
 
                                     $guest = $db->getGuest($file["User"], $file["GuestName"], date('Y-m-d',$calendar['FirstDate']), date('Y-m-d',$calendar['SecondDate']));
 
                                     sendMessageEditGuest($guest, $permission, $messageInLineKeyboardPath);
+
+                                    $msg = _("Il periodo di permanenza in struttura di")." ".$file['GuestName']." "._("ospitato da")." ".$db->getUser($file['User'])['FullName']." "._("è stato modificato, ora sarà ospite dal")." ".date('Y-m-d',$file['CheckInDate'])." "._("al")." ".date('Y-m-d',$file['LeavingDate']);
+                                    $bot->sendMessage($msg);
                                 }
                                 else{
                                     $bot->sendMessage(_("Non è stato possibile modificare il periodo di permanenza dell'ospite"), $keyboard);
@@ -578,6 +581,9 @@
 
                         if($db->updateGuest($guestFile['User'],$guestFile["GuestName"], date('Y-m-d',$guestFile['CheckInDate']),  date('Y-m-d',$guestFile['LeavingDate']), date('Y-m-d',$guestFile['NewCheckInDate']), date('Y-m-d',$guestFile['NewLeavingDate']))){
                             $bot->sendMessage(_("Il periodo di permanenza di").' '.$guestFile["GuestName"].' '._("è stato modificato"));
+
+                            $msg = _("Il periodo di permanenza in struttura di")." ".$guestFile['GuestName']." "._("ospitato da")." ".$db->getUser($guestFile['User'])['FullName']." "._("è stato modificato, ora sarà ospite dal")." ".date('Y-m-d',$guestFile['CheckInDate'])." "._("al")." ".date('Y-m-d',$guestFile['LeavingDate']);
+                            $bot->sendMessage($msg);
                         }
                         else{
                             $bot->setChatID($words[3]);
