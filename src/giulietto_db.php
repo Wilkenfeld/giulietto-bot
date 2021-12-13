@@ -1095,7 +1095,7 @@ class GiuliettoDB
                          AccountType AT ON U.AccountType = AT.Name INNER JOIN
                          Permission P ON AT.Permission = P.Name
                     WHERE U.Enabled IS TRUE AND 
-                          P.IsOccupant IS TRUE
+                          U.Room IS NOT NULL
                 
                 ) AS NumUtenti INNER JOIN (
                 
