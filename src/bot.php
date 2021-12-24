@@ -2487,7 +2487,7 @@
                         $bot->sendMessage(_('Reset completato'), $keyboard);
                     }
                     else{
-                        file_put_contents(TmpFileUser_path.'reset_setWebhook.json');
+                        file_put_contents(TmpFileUser_path.'reset_setWebhook.json', json_encode($res, JSON_PRETTY_PRINT));
                     }
                 }
                 elseif(array_key_exists($update["text"],$db->getGroupList())){
