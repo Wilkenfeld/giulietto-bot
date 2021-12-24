@@ -51,7 +51,7 @@ function notificaTurni($bot, $db, $log){
 
             $absentsChatID = [];
             while($row = $absents->fetch_assoc()){
-                $absentsChatID[] = $row["User"];
+                $absentsChatID[] = $row["ChatID"];
             }
 
             foreach($users as $user){
