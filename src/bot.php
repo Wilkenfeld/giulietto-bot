@@ -17,36 +17,6 @@
 
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-    define("MAIN_KEYBOARD_TEXT" , array(
-            "AbsenceList" => _("Lista assenti")." \u{1F4CB}",
-            "GuestList" => _("Lista ospiti")." \u{1F4CB}",
-            "UserList" => _("Lista utenti")." \u{1F4CB}",
-            "RoomList" => _('Lista camere')." \u{1F4CB}",
-            "ChangeEmail" => _("Modifica email")." \u{1F4E7}",
-            "NewAbsence" => _("Assenza")." \u{1F44B}",
-            "NewGuest" => _("Ospite")." \u{1F6CF}",
-            "GroupList" => _("Gruppi")." \u{1F4CB}",
-            "MyGuestList" => _("I miei ospiti")." \u{1F4CB}",
-            "MyAbsenceList" => _("Le mie assenze")." \u{1F4CB}",
-            "TurnList" => _("Turni")." \u{1F9F9}",
-            "GetGuideLine" => _("Linee guida")." \u{1F4D6}",
-            "NewGuideLine" => _("Carica Linee guida")." \u{1F4D6}",
-            "TypeOfTurnList" => _("Tipi turno")." \u{1F4CB}",
-            "SwapGroup" => _("Scambia gruppo")." \u{1F503}",
-            "RearrangeGroups" => _("Riorganizza Gruppi")." \u{1F500}",
-            "TurnCalendar" => _("Calendario turni")." \u{1F5D3}",
-            "ReportsMaintenance" => _("Segnala")." \u{1F6A8}",
-            "ManageMaintenance" => _("Manutenzioni")." \u{1F6E0}"
-        )
-    );
-
-    define("EXPORT_KEYBOARD_TEXT" , array(
-            "ExportUserList" => _("Lista utenti"),
-            "ExportGuest" => _("Ospiti"),
-            "ExportAbsence" => _("Assenze"),
-        )
-    );
-
     // Creazione della connessione al Database
     try{
         $conn = new mysqli(DB_HOST,DB_USERNAME,DB_PASSWORD, DB_NAME);
@@ -103,14 +73,44 @@
             }
         }
         else{
-            $bot->sendMessage(_("Effettua l'accesso per poter utilizzare il bot, per accedere invia un messaggio in questo formato: \"pw password\", dove password è la password che ti è stata fornita per l'accesso"));
+            $bot->sendMessage("Effettua l'accesso per poter utilizzare il bot, per accedere invia un messaggio in questo formato: \"pw password\", dove password è la password che ti è stata fornita per l'accesso");
         }
         exit;
     }
 
     setlocale(LC_ALL, LOCALE[$user["Language"]]);
-    bindtextdomain('messages','./locale');
+    bindtextdomain('messages','../locale');
     textdomain('messages');
+
+    define("MAIN_KEYBOARD_TEXT" , array(
+            "AbsenceList" => _("Lista assenti")." \u{1F4CB}",
+            "GuestList" => _("Lista ospiti")." \u{1F4CB}",
+            "UserList" => _("Lista utenti")." \u{1F4CB}",
+            "RoomList" => _('Lista camere')." \u{1F4CB}",
+            "ChangeEmail" => _("Modifica email")." \u{1F4E7}",
+            "NewAbsence" => _("Assenza")." \u{1F44B}",
+            "NewGuest" => _("Ospite")." \u{1F6CF}",
+            "GroupList" => _("Gruppi")." \u{1F4CB}",
+            "MyGuestList" => _("I miei ospiti")." \u{1F4CB}",
+            "MyAbsenceList" => _("Le mie assenze")." \u{1F4CB}",
+            "TurnList" => _("Turni")." \u{1F9F9}",
+            "GetGuideLine" => _("Linee guida")." \u{1F4D6}",
+            "NewGuideLine" => _("Carica Linee guida")." \u{1F4D6}",
+            "TypeOfTurnList" => _("Tipi turno")." \u{1F4CB}",
+            "SwapGroup" => _("Scambia gruppo")." \u{1F503}",
+            "RearrangeGroups" => _("Riorganizza Gruppi")." \u{1F500}",
+            "TurnCalendar" => _("Calendario turni")." \u{1F5D3}",
+            "ReportsMaintenance" => _("Segnala")." \u{1F6A8}",
+            "ManageMaintenance" => _("Manutenzioni")." \u{1F6E0}"
+        )
+    );
+
+    define("EXPORT_KEYBOARD_TEXT" , array(
+            "ExportUserList" => _("Lista utenti"),
+            "ExportGuest" => _("Ospiti"),
+            "ExportAbsence" => _("Assenze"),
+        )
+    );
 
     $permission = $db->getPermission($user['AccountType']);
 
@@ -2265,13 +2265,14 @@
                 }
                 elseif($update["text"] == _("Cambia lingua")." \u{1F524}"){
                     $langArrayKeyboard[] = [['text' => _("Italiano")]];
+                    $langArrayKeyboard[] = [['text' => "Klingon"]];
                     $langArrayKeyboard[] = [['text' => "\u{1F3E1}"]];
                     $langKeyboard = json_encode(['keyboard'=>  $langArrayKeyboard, 'resize_keyboard'=> true] ,JSON_PRETTY_PRINT);
                     $bot->sendMessage(_("Seleziona la lingua"), $langKeyboard);
                 }
                 elseif($update["text"] == _("Italiano")){
                     if($db->updateLanguage($chatID,'it')){
-                        $bot->sendMessage(_("Lingua italiana impostata"), $keyboard);
+                        $bot->sendMessage(_("Lingua italiana impostata, ricarica il menu => /menu"), $keyboard);
                     }
                     else{
                         $bot->sendMessage(_("Si è verificato un problema nell'impostare la lingua da te richiesta"), $keyboard);
@@ -2279,7 +2280,15 @@
                 }
                 elseif($update["text"] == _("Inglese")){
                     if($db->updateLanguage($chatID,'en')){
-                        $bot->sendMessage(_("The English language has been set"), $keyboard);
+                        $bot->sendMessage("The English language has been set, reload the menu => /menu", $keyboard);
+                    }
+                    else{
+                        $bot->sendMessage(_("Si è verificato un problema nell'impostare la lingua da te richiesta"), $keyboard);
+                    }
+                }
+                elseif($update["text"] == _("Klingon")){
+                    if($db->updateLanguage($chatID,'de')){
+                        $bot->sendMessage("tlhInganpu' QongDaq tlhInganpu' tlhInganpu' => /menu", $keyboard);
                     }
                     else{
                         $bot->sendMessage(_("Si è verificato un problema nell'impostare la lingua da te richiesta"), $keyboard);
