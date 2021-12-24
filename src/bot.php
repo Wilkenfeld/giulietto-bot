@@ -907,7 +907,7 @@
                 }
                 else{
                     $db->updateAccountType($chatID, $accountType);
-                    $bot->sendMessage(_("Sei passato all'account di tipo: ").$accountType.PHP_EOL._('Clicca per ricaricare il menù => /menu'));
+                    $bot->sendMessage(_("Sei passato all'account di tipo: ").$accountType.PHP_EOL._('Clicca per ricaricare il menù')." => /menu");
 
                     $newUserNotification = $db->getAllUsersForNotification('NewUser');
                     $_users = [];
