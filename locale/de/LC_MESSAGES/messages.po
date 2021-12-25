@@ -1,0 +1,1290 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-12-24 11:13+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: bot.php:21 bot.php:1469
+msgid "Lista assenti"
+msgstr "tetlh Dach"
+
+#: bot.php:22 bot.php:1481
+msgid "Lista ospiti"
+msgstr "tetlh ghIlDeSten"
+
+#: bot.php:23 bot.php:44 bot.php:1493 bot.php:1884
+msgid "Lista utenti"
+msgstr "tetlh gho"
+
+#: bot.php:24 bot.php:1524
+msgid "Lista camere"
+msgstr "tetlh roSenQatlh"
+
+#: bot.php:25 bot.php:1619
+msgid "Modifica email"
+msgstr "vID chIm"
+
+#: bot.php:26 bot.php:1633
+msgid "Assenza"
+msgstr "cha'logh"
+
+#: bot.php:27 bot.php:1646
+msgid "Ospite"
+msgstr "meb"
+
+#: bot.php:28 bot.php:1683
+msgid "Gruppi"
+msgstr "ghIl"
+
+#: bot.php:29 bot.php:1803
+msgid "I miei ospiti"
+msgstr "Wij ghIlDeSten"
+
+#: bot.php:30 bot.php:1741
+msgid "Le mie assenze"
+msgstr "Wij Dach"
+
+#: bot.php:31 bot.php:1838
+msgid "Turni"
+msgstr "yop"
+
+#: bot.php:32 bot.php:1460
+msgid "Linee guida"
+msgstr "tlhegh Dev"
+
+#: bot.php:33 bot.php:1862
+msgid "Carica Linee guida"
+msgstr "Huj tlhegh Dev"
+
+#: bot.php:34 bot.php:2119
+msgid "Tipi turno"
+msgstr "cha'logh yIv"
+
+#: bot.php:35 bot.php:2157
+msgid "Scambia gruppo"
+msgstr "tam ghom"
+
+#: bot.php:36 bot.php:2183
+msgid "Riorganizza Gruppi"
+msgstr "reghuluSngan ghom"
+
+#: bot.php:37 bot.php:2090
+msgid "Calendario turni"
+msgstr "'ISjaH yIv"
+
+#: bot.php:38 bot.php:2199
+msgid "Segnala"
+msgstr "ja'"
+
+#: bot.php:39 bot.php:2207
+msgid "Manutenzioni"
+msgstr "leH"
+
+#: bot.php:45 bot.php:1955
+msgid "Ospiti"
+msgstr "ghIlDeSten"
+
+#: bot.php:46 bot.php:2025
+msgid "Assenze"
+msgstr "cha'loghmey"
+
+#: bot.php:78 bot.php:901
+msgid "Non esiste nessun account associato a questa password"
+msgstr "be' wa'DIch Qo' vang ngaQ yabvaH'e' ghajpu'bogh leng chaw'"
+
+#: bot.php:89
+msgid ""
+"Benvenuto nel bot di Villa Giulia, clicca qui per aprire in menù => /menu"
+msgstr "ghilghameSvaD jatlh yeSuS wanI'vam wIQaw'chugh, => /menu"
+
+#: bot.php:98
+msgid " ha appena effettuato l'accesso con l'account: "
+msgstr " vIteqlIjDaq jI'eghmoHchu'be'. "
+
+#: bot.php:101
+msgid "Si è verificato un errore, registrazione non riuscita"
+msgstr "Heghpu'DI' qeylIS pIn'a',"
+
+#: bot.php:118 bot.php:135
+msgid "Si è verificato un errore, il bot è momentaneamente fuori servizio."
+msgstr "wa'maH tu'lu'bogh Qoyqu'choHtaHvIS."
+
+#: bot.php:125 bot.php:1871
+msgid "Esporta"
+msgstr "pIr"
+
+#: bot.php:125 bot.php:128 bot.php:2266
+msgid "Cambia lingua"
+msgstr "choH jat"
+
+#: bot.php:152 bot.php:188
+msgid ""
+"Prima di poter fare altro devi annullare o concludere l'inserimento della "
+"data"
+msgstr ""
+"qo' DacharghlaHbe'chugh, vaj bIvalchugh "
+"jaj"
+
+#: bot.php:173
+msgid "Nuovo turno creato"
+msgstr "chu' yIv DIch"
+
+#: bot.php:176
+msgid "Si è verificato un errore nella creazione del nuovo turno"
+msgstr "patlh DotlhchajDaq ghoSmoHchu'"
+
+#: bot.php:208
+msgid "Usa le frecce per selezionare la data dell'ultimo giorno di assenza "
+msgstr "tIqlIjDaq SaDchoH yIlo' "
+
+#: bot.php:216
+msgid ""
+"Usa le frecce per selezionare la nuova data di ritorno, o lascia quella "
+"vecchia"
+msgstr ""
+"QapmeH po' jIvHa'choHmeH mIw yIlo' "
+"be'"
+
+#: bot.php:219
+msgid "Usa le frecce per selezionare la data di partenza dell'ospite"
+msgstr "yoS Dache'chugh jIvHa'choHmeH mIw yIlo'"
+
+#: bot.php:227
+msgid ""
+"Usa le frecce per selezionare la nuova data di partenza dell'ospite, o "
+"lascia quella vecchia"
+msgstr ""
+"DaSo'choHmeH je qech, qaStaHvIS choHmeH, SuvwI' tIq nge'pu' "
+"latlh puH Duv neH vIchav"
+
+#: bot.php:230
+msgid "Usa le frecce per selezionare la seconda data"
+msgstr "Hoch joH yIlo'"
+
+#: bot.php:239
+msgid "La prima data deve essere antecedente alla seconda"
+msgstr "ngabchu'bogh nuvpu' chenmoHlu'be'"
+
+#: bot.php:262
+msgid ""
+"Modifica non riuscita, l'ospite deve essere registrato e confermato con 2 "
+"giorni d'anticipo, prova a ricontrollare le date inserite"
+msgstr ""
+"qaStaHvIS rammey, SIbI' qa' ghu' vIDelchugh, "
+"pe'vIl SammeH jaj luchegh,"
+
+#: bot.php:276 bot.php:2884
+msgid ""
+"Nei seguenti giorni non sono disponibili posti in struttura, scegli un altra "
+"data"
+msgstr ""
+"'ej chah pa' ravDaq SuvlaHbe' ghotpu''e' "
+"jaj"
+
+#: bot.php:291 bot.php:2900
+msgid ""
+"Non puoi ospitare più di due persone nello stesso periodo, stai gia "
+"ospitando:\n"
+msgstr ""
+"bIlengtaHvIS, wa' qorDu'lIj naQ Dalo'taHvIS, "
+"'eH, qarDaj!\n"
+
+#: bot.php:295 bot.php:1825 bot.php:2904 bot.php:2999 bot.php:3011 bot.php:3230
+msgid " dal "
+msgstr " Vo' "
+
+#: bot.php:295 bot.php:346 bot.php:435 bot.php:1764 bot.php:1769 bot.php:1825
+#: bot.php:2904 bot.php:2950 bot.php:2999 bot.php:3011 bot.php:3230
+msgid " al "
+msgstr " ngun "
+
+#: bot.php:316 bot.php:585
+msgid "Il periodo di permanenza in struttura di"
+msgstr "Dotlh wa'DIch nuvpu'"
+
+#: bot.php:316 bot.php:585
+msgid "ospitato da"
+msgstr "nguv Vo'"
+
+#: bot.php:316 bot.php:585
+msgid "è stato modificato, ora sarà ospite dal"
+msgstr "dubbe'nIS qelnISbe'chugh vaj wanI',"
+
+#: bot.php:316 bot.php:407 bot.php:414 bot.php:463 bot.php:585 bot.php:627
+#: bot.php:666
+msgid "al"
+msgstr " ngun "
+
+#: bot.php:320 bot.php:591
+msgid "Non è stato possibile modificare il periodo di permanenza dell'ospite"
+msgstr "Subbe' Dol puS mIw'a'"
+
+#: bot.php:346 bot.php:2950
+msgid "Il/La tuo/a compagno/a di stanza "
+msgstr "lI Lij paramaqqay pa'Daq"
+
+#: bot.php:346
+msgid " vorrebbe cambiare il periodo di permanenza di "
+msgstr " wovHa'bogh vay' woJ HIvje'wI' neH, "
+
+#: bot.php:346
+msgid " nella vostra stanza, il nuovo periodo di permanenza è dal "
+msgstr " DItel chu'wI' Del chu'wI' vItobmeH, "
+
+#: bot.php:346 bot.php:2950
+msgid ", per te va bene?"
+msgstr "be'nI''a'puqloD?"
+
+#: bot.php:364 bot.php:2963
+msgid ""
+"Attendi la conferma dei tuoi compagni di stanza, ti arriverà una notifica "
+"quando confermeranno"
+msgstr ""
+"bIQ'a'Daq neHtaHghachdaj mIwmey wa'netlh Dolmey lIngmeH "
+"jagh qaD"
+
+#: bot.php:367 bot.php:2966
+msgid ""
+"Attendi la conferma del tuo compagno di stanza, ti arriverà una notifica "
+"quando confermerà"
+msgstr ""
+"bI'IHchugh, vaj ra'taHvIS yInlIj je "
+"juppu' SuqaD"
+
+#: bot.php:372 bot.php:2971
+msgid "L'ospite risulta già registrato"
+msgstr "ben law' Hol puSnISlu'"
+
+#: bot.php:386
+msgid "Nessun ospite"
+msgstr "Qo' meb"
+
+#: bot.php:392
+msgid "parte il "
+msgstr "'ejyo'"
+
+#: bot.php:402
+msgid ""
+"Non puoi registrare un assenza che termina in un giorno antecedente ad oggi"
+msgstr "be' tuq'a' ta dach SIQ Daq a jaj vatlh ngeH DaHjaj"
+
+#: bot.php:407
+msgid "Nuova assenza registrata dal"
+msgstr "'ach SuvwI'pu'"
+
+#: bot.php:414
+msgid "sarà assente dal"
+msgstr "che'wI' boQDI'"
+
+#: bot.php:419
+msgid "Non è stato possibile registrare l'assenza"
+msgstr "pagh vuvbe' ta Dach"
+
+#: bot.php:435 bot.php:1764 bot.php:1769
+msgid "Dal "
+msgstr "Vo' "
+
+#: bot.php:441 bot.php:1775 bot.php:3238
+msgid "Modifica"
+msgstr "vID"
+
+#: bot.php:445 bot.php:1779 bot.php:2236 bot.php:3179 bot.php:3242
+msgid "Elimina"
+msgstr "Dotlh"
+
+#: bot.php:463
+msgid "ha modificato la sua assenza dal"
+msgstr "yaHpu'DI' mISnISqu'"
+
+#: bot.php:463
+msgid ", ora sarà assente dal"
+msgstr ", tugh 'e' luQoyDI' bIH"
+
+#: bot.php:468
+msgid "Non è stato possibile modificare l'assenze"
+msgstr "motlhbe'chugh vaj qaSbe'chugh"
+
+#: bot.php:484
+msgid "Nessun assente"
+msgstr "DaH ghobe'"
+
+#: bot.php:495
+msgid "ritorna il "
+msgstr "veng "
+
+#: bot.php:514
+msgid "Hai accettato la presenza di un ospite nella tua camera"
+msgstr "Lut DaSopmoHchu', boSo''eghchu', vaj Dalo'chu'"
+
+#: bot.php:529 bot.php:2921
+msgid "Ospite confermato e registrato"
+msgstr "yo' qIj"
+
+#: bot.php:535
+msgid "Il tuo ospite è stato accettato da "
+msgstr "laHlIj tlhaQ Daghajchugh "
+
+#: bot.php:559
+msgid " non ha accettato il tuo ospite, l'ospite non verrà registrato."
+msgstr " ngoy' nuch nuH, DunuQchugh tuHDaj."
+
+#: bot.php:574
+msgid ""
+"Hai accettato la modifica del periodo di permanenza dell'ospite nella tua "
+"camera"
+msgstr ""
+"yoDSut DachavtaHvIS, qeylIS puS "
+"pa'Daq"
+
+#: bot.php:583
+msgid "Il periodo di permanenza di"
+msgstr "HoS puqloD"
+
+#: bot.php:583
+msgid "è stato modificato"
+msgstr "yab"
+
+#: bot.php:597
+msgid ""
+"La modifica del periodo di permanenza del tuo ospite è stata accettata da "
+msgstr "bIlengtaHvIS, SoHvaD Qeb DaQoyqangchu'bej. "
+
+#: bot.php:603
+msgid ""
+"Hai rifiutato la modifica del periodo di permanenza dell'ospite nella tua "
+"camera"
+msgstr ""
+"yo' Dache'chugh, vaj DavIHbe'chugh "
+"pa'Daq"
+
+#: bot.php:613
+msgid ""
+" non ha accettato la modifica del periodo di permanenza del tuo ospite, il "
+"periodo di permanenza non verrà cambiato."
+msgstr ""
+" QupwI'vaD naH 'oHDaq ratlhtaHvIS ram yIleghchugh, vaj ram yIQaw'Qo'. "
+"choHbej 'oHbe'chu'."
+
+#: bot.php:627
+msgid "ha eliminato l'assenza dal"
+msgstr "chenpa' law'choH poH nIHwI'pu'"
+
+#: bot.php:632
+msgid "Non è stato possibile eliminare l'assenza"
+msgstr "chIm chenmoHlu'"
+
+#: bot.php:651
+msgid ""
+"Usa le frecce per selezionare la nuova data di partenza, o lascia quella "
+"vecchia"
+msgstr ""
+"qaStaHvIS jojmey chu' lutu'lu' "
+"be'"
+
+#: bot.php:666
+msgid "non sarà più ospite in camera"
+msgstr "muSHa'choHtaHvIS ghaH, pagh muSHa'choHchugh"
+
+#: bot.php:666
+msgid "dal"
+msgstr "Vo'"
+
+#: bot.php:670
+msgid "Non è stato possibile cancellare la registrazione dell'ospite"
+msgstr "mIw'a' ghajbe'"
+
+#: bot.php:699
+msgid ""
+"Usa le frecce per selezionare la nuova data di arrivo, o lascia quella "
+"vecchia"
+msgstr ""
+"Qapla' suvwI'pu' je chu' "
+"be'"
+
+#: bot.php:702
+msgid ""
+"È in corso la modifica di un altro ospite, attendi che sia confermato per "
+"poterne modificare un altro"
+msgstr ""
+"rInpa' wa'DIch 'oH ngeDqu'chugh, "
+"HISlaHbe'chugh, vaj jagh"
+
+#: bot.php:717 bot.php:1089
+msgid ""
+"Eliminando un utente verranno eliminate in automatico anche tutte le sue "
+"assenze registrate, i suoi ospiti e verrà rimosso da tutti i gruppi di cui "
+"fa parte. Per confermare l'eliminazione scrivi il seguente codice:"
+msgstr ""
+"reH tlhejtaHvIS naghmey ngeHbej "
+"mu'tlheghmey nejmoHlaHbe' mu'tlheghmey nejtaH, "
+"'ay' yIQoy. pay' ra'taHvIS ghogh:"
+
+#: bot.php:738
+msgid "Non è stato possibile abilitare/disabilitare l'utente"
+msgstr "molDajDaq Humbab/a' ratlhbe'"
+
+#: bot.php:748 bot.php:1042
+msgid "Invia il nuovo nome:"
+msgstr "jatlh 'e' yImev:"
+
+#: bot.php:766 bot.php:2288 bot.php:2303
+msgid "Nessuna camera"
+msgstr "pa'"
+
+#: bot.php:767
+msgid "Scegli la camera da assegnare fra quelle disponibili: "
+msgstr "qeylIS wIqel qeylIS je chuS: "
+
+#: bot.php:782 bot.php:798 bot.php:1706
+msgid "Non è stato possibile recuperare la lista dei gruppi"
+msgstr "ghotvammo' bIVHa'wI' nIv"
+
+#: bot.php:785 bot.php:1711 bot.php:1714
+msgid "Non esiste nessun gruppo"
+msgstr "vaj ghaHvaD qa' pagh"
+
+#: bot.php:789
+msgid "Scegli in quale gruppo vuoi inserire l'utente: "
+msgstr "'ej qa'lI' Qu'lIj neH: "
+
+#: bot.php:801
+msgid "L'utente non appartiene a nessun gruppo"
+msgstr "ngoQDaj charghbe' nuv"
+
+#: bot.php:805
+msgid "Scegli da quale gruppo vuoi rimuovere l'utente: "
+msgstr "'ach bIHeghchugh, vaj meq'e' wIlo'nISchugh: "
+
+#: bot.php:825
+msgid " ha accettato lo scambio da "
+msgstr " ghojmoH "
+
+#: bot.php:828
+msgid "Si è verificato un problema nel cambio di gruppo"
+msgstr "chaH nuvpu' mISwI'"
+
+#: bot.php:832
+msgid " ha rifiutato lo scambio da "
+msgstr " ratlhtaHvIS ghu'vam "
+
+#: bot.php:843 bot.php:1123 bot.php:1131
+msgid "Invia la nuova frequenza del turno:"
+msgstr "jatlh chaH:"
+
+#: bot.php:852 bot.php:1164 bot.php:1172
+msgid "Invia da quanti utenti deve essere composto il gruppo:"
+msgstr "maw'mo', QI'tu' Qumpaj qengtaHvIS:"
+
+#: bot.php:864
+msgid "Scegli in quale gruppo vuoi inserire gli utenti nella camera: "
+msgstr "'ej molDaq ghoTpu'vam DaqeltaHvIS: "
+
+#: bot.php:881 bot.php:929
+msgid ""
+"Il tuo account è stato disabilitato, non ti sarà possibile utilizzare il bot "
+"fino a quando non verrà riattivato."
+msgstr ""
+"naHlIj DaSopbe'chugh, vaj DaH naDevvo' jatlhlu' "
+"'ugh QeyqangtaH."
+
+#: bot.php:906
+msgid "Sei gia registrato"
+msgstr "bIyuD"
+
+#: bot.php:910
+msgid "Sei passato all'account di tipo: "
+msgstr "jISaHchu'meH: "
+
+#: bot.php:910
+msgid "Clicca per ricaricare il menù"
+msgstr "Heghpu' vIHech"
+
+#: bot.php:919
+msgid " è passato all'account di tipo: "
+msgstr " ta' neH vIDelchu'be'. "
+
+#: bot.php:935 bot.php:944 bot.php:1869
+msgid "Invia il file con le nuove linee guida:"
+msgstr "cha' nay'taHvIS mIS:"
+
+#: bot.php:938 bot.php:962 bot.php:976 bot.php:993 bot.php:1003 bot.php:1023
+#: bot.php:1034 bot.php:1044 bot.php:1092 bot.php:1125 bot.php:1166
+#: bot.php:1207 bot.php:1218 bot.php:1237 bot.php:1256 bot.php:1279
+#: bot.php:1437 bot.php:1472 bot.php:1484 bot.php:1496 bot.php:1527
+#: bot.php:1556 bot.php:1622 bot.php:1636 bot.php:1649 bot.php:1686
+#: bot.php:1734 bot.php:1744 bot.php:1806 bot.php:1865 bot.php:1874
+#: bot.php:1886 bot.php:1957 bot.php:2027 bot.php:2092 bot.php:2121
+#: bot.php:2151 bot.php:2159 bot.php:2185 bot.php:2201 bot.php:2209
+#: bot.php:2299 bot.php:2390 bot.php:2398 bot.php:2445 bot.php:2593
+#: bot.php:2615 bot.php:2649 bot.php:2771 bot.php:2787
+msgid "Mi dispiace ma non so come aiutarti"
+msgstr "tugh 'e' vISovchugh, qaSpa' Dotlh 'e' vISov."
+
+#: bot.php:943
+msgid "Invia il file dalla sezione file di telegram"
+msgstr "qaStaHvISvIS rapvo' SuvwI'vaD"
+
+#: bot.php:948
+msgid "Nuove linee guida caricate"
+msgstr "Hunglu'be'chugh ngo'"
+
+#: bot.php:952
+msgid "Si è verificato un errore nel salvataggio del file"
+msgstr "Hoch DotlhDaj nguvmoHbogh tIqDaj SuvwI'pu'"
+
+#: bot.php:956
+msgid "Il file deve essere in formato pdf"
+msgstr "SorDaq cholnISlu'meH, pdf"
+
+#: bot.php:959 bot.php:1631
+msgid "Invia la tua nuova email:"
+msgstr "bIleghDI' email:"
+
+#: bot.php:967
+msgid ""
+"Non è stato possibile aggiornare l'e-mail, controlla che sia in un formato "
+"valido."
+msgstr ""
+"net Har pe'be'lu'pu'bogh rur vaj ramlaHbe' "
+"valido."
+
+#: bot.php:970
+msgid "E-mail aggiornata, la tua nuova e-mail è: "
+msgstr "'ach ghu'vam chIrgh'e' "
+
+#: bot.php:973 bot.php:1560
+msgid "Invia il numero di posti della camera:"
+msgstr "'ej qaSDI' Qu'chaj, 'ej leSSovDaq jIlegh."
+
+#: bot.php:984
+msgid "Camera"
+msgstr "pa'Daq"
+
+#: bot.php:984
+msgid "aggiunta"
+msgstr "cha'DIch"
+
+#: bot.php:987
+msgid "Si è verificato un errore nell'aggiungere la camera"
+msgstr "Qo'noSDaq bIH qad'a'"
+
+#: bot.php:990 bot.php:1677
+msgid "Scrivi Nome e Cognome dell'ospite da registrare:"
+msgstr "qaStaHvIS ram qupmey, 'ej qaStaHvIS ram."
+
+#: bot.php:1000 bot.php:1011
+msgid "Scrivi Nome e Cognome dell'ospite da eliminare:"
+msgstr "qeylIS be'nalpu'bogh je nuv'egh."
+
+#: bot.php:1010 bot.php:2824
+msgid "Il nome non può essere vuoto"
+msgstr "pongna' chenmoHlaH pagh"
+
+#: bot.php:1016
+msgid ""
+"Usa le frecce per selezionare la prima data dell'assenza che vuoi eliminare"
+msgstr ""
+"tuq DanoHmeH qo' yIlo' juplI' SuvwI'pu'"
+
+#: bot.php:1020 bot.php:2843 bot.php:2849
+msgid "Scatta una foto del fronte del documento dell'ospite ed inviala:"
+msgstr "mIw'a' Qongbogh mIw'a' tu'lu':"
+
+#: bot.php:1031 bot.php:2853 bot.php:2860
+msgid "Scatta una foto del retro del documento dell'ospite ed inviala:"
+msgstr "mIw'a' QoyDI' mIw'a' neH:"
+
+#: bot.php:1060 bot.php:1080 bot.php:1519 bot.php:1562 bot.php:2327
+#: bot.php:2341 bot.php:2514 bot.php:2541
+msgid "Visualizza utenti disabilitati"
+msgstr "ngoQlu'chugh neH"
+
+#: bot.php:1070
+msgid "Nome modificato"
+msgstr "pongmey'e'"
+
+#: bot.php:1081
+msgid "Non è stato possibile cambiare il nome da "
+msgstr "ruchna'be' puSchoHbe' "
+
+#: bot.php:1081 bot.php:2439
+msgid " a "
+msgstr ""
+
+#: bot.php:1108
+msgid " eliminato"
+msgstr " Hegh"
+
+#: bot.php:1111
+msgid "Non è stato possibile eliminare l'utente"
+msgstr "qo' nay'chuqbe'"
+
+#: bot.php:1115
+msgid "Il codice inserito non è valido, l'utente non verrà eliminato"
+msgstr "qo' nIvDaq ba' nIv"
+
+#: bot.php:1130 bot.php:1171
+msgid "Il numero inserito non è valido, deve essere un numero maggiore di 0"
+msgstr "Su'IjMe'chugh, vaj meQlaHbe'chugh."
+
+#: bot.php:1146 bot.php:1187 bot.php:2138 bot.php:2149
+msgid "Crea nuovo turno"
+msgstr "pe'vIl ghob"
+
+#: bot.php:1154
+msgid "Frequenza cambiata"
+msgstr "raSpu'"
+
+#: bot.php:1159
+msgid "Non è stato possibile cambiare la frequenza"
+msgstr "bIHvaD pagh lut tu'lu'"
+
+#: bot.php:1195
+msgid "Numero di utenti per gruppo modificato"
+msgstr "nuvpu'bogh nuv'e'"
+
+#: bot.php:1200
+msgid "Non è stato possibile cambiare il numero di utenti per gruppo"
+msgstr "Dunvo' nuv mIw'a' neH yuQmey'e'"
+
+#: bot.php:1205 bot.php:2155
+msgid "Scrivi il nome del nuovo turno da creare:"
+msgstr "ram meqlaHbe'chugh."
+
+#: bot.php:1214 bot.php:1216 bot.php:1224 bot.php:1262
+msgid "Scrivi ogni quanti giorni deve essere eseguito il turno:"
+msgstr "'ej Qu' wa'DIch lunaDchu'meH Qu':"
+
+#: bot.php:1223 bot.php:1242 bot.php:1261
+msgid "Il numero inserito non è valido"
+msgstr "che'wI' DapongmeH Datu'chugh, vaj DaH pong HutlhwI'"
+
+#: bot.php:1233 bot.php:1235 bot.php:1243
+msgid "Scrivi quante volte consecutivamente un gruppo deve eseguire il turno:"
+msgstr "chay' ghotvam mIgh vIDelchu'meH:"
+
+#: bot.php:1252 bot.php:1254
+msgid "Scrivi da quanti utenti deve indicativamente essere composto un gruppo:"
+msgstr "qaStaHvIS ramvam, ghojmoHlaHbe'chugh je:"
+
+#: bot.php:1275
+msgid ""
+"Usa le frecce per selezionare la data in cui il turno inizierà ad essere "
+"eseguito"
+msgstr ""
+"tiqlo' che'meH mIwvam chu' "
+"motlh"
+
+#: bot.php:1277
+msgid "Scrivi il seguente codice per confermare:"
+msgstr "vay' luSammeH ghitlhlu'bogh vIchaw'DI':"
+
+#: bot.php:1398
+msgid ""
+"Il calendario dei turni ed i gruppi sono stati aggiornati, ora fai parte dei "
+"seguenti gruppi:"
+msgstr ""
+"Duj chu' DatuQmoHbe'chugh, vaj ghojmoHwI', "
+"ngeDqu'choH:"
+
+#: bot.php:1428
+msgid "Il codice inserito non è valido, i gruppi non verranno riorganizzati"
+msgstr ""
+
+#: bot.php:1435 bot.php:2205
+msgid "Descrivi il problema:"
+msgstr ""
+
+#: bot.php:1442
+msgid "Segnalazione inviata"
+msgstr ""
+
+#: bot.php:1446
+msgid "Nuova segnalazione"
+msgstr ""
+
+#: bot.php:1447 bot.php:2231 bot.php:2256
+msgid "Segnalato da: "
+msgstr ""
+
+#: bot.php:1457
+msgid "Si è verificato un errore nella registrazione della segnalazione"
+msgstr ""
+
+#: bot.php:1479
+msgid "Seleziona il giorno per cui vuoi visualizzare le assenze"
+msgstr ""
+
+#: bot.php:1491
+msgid "Seleziona il giorno per cui vuoi visualizzare gli ospiti"
+msgstr ""
+
+#: bot.php:1503
+msgid "Non è stato possibile recuperare la lista degli utenti"
+msgstr ""
+
+#: bot.php:1520
+msgid "Seleziona un utente per modificarlo:"
+msgstr ""
+
+#: bot.php:1533
+msgid "Lista Camere"
+msgstr ""
+
+#: bot.php:1537
+msgid "Camera "
+msgstr ""
+
+#: bot.php:1537
+msgid "Posti occupati"
+msgstr ""
+
+#: bot.php:1541 bot.php:1553 bot.php:2576
+msgid "Aggiungi nuova camera"
+msgstr ""
+
+#: bot.php:1551
+msgid "Seleziona una camera per vederne i membri:"
+msgstr ""
+
+#: bot.php:1566
+msgid "Nessun utente disabilitato"
+msgstr ""
+
+#: bot.php:1583 bot.php:3275
+msgid " - Camera "
+msgstr ""
+
+#: bot.php:1587
+msgid " - Gruppo "
+msgstr ""
+
+#: bot.php:1590
+msgid " - Privato "
+msgstr ""
+
+#: bot.php:1593
+msgid " - Canale "
+msgstr ""
+
+#: bot.php:1596
+msgid " - Super-gruppo "
+msgstr ""
+
+#: bot.php:1603 bot.php:1719 bot.php:1722
+msgid "Tutti i gruppi"
+msgstr ""
+
+#: bot.php:1627
+msgid "Attualmente non hai impostata nessuna email"
+msgstr ""
+
+#: bot.php:1629
+msgid "L'e-mail attualmente impostata è "
+msgstr ""
+
+#: bot.php:1644
+msgid "Usa le frecce per selezionare la data di partenza"
+msgstr ""
+
+#: bot.php:1654
+msgid ""
+"Per poter registrare un ospite devi prima essere assegnato ad una camera"
+msgstr ""
+
+#: bot.php:1676
+msgid ""
+"ATTENZIONE: un ospite va CONFERMATO E REGISTRATO almeno 72 ore prima "
+"dell'arrivo in struttura, la prima data utile che hai a disposizione è il"
+msgstr ""
+
+#: bot.php:1680
+msgid ""
+"È in corso la registrazione di un altro ospite, attendi che sia confermato "
+"per poterne registrare un altro"
+msgstr ""
+
+#: bot.php:1690
+msgid "Gruppi di cui fai parte: "
+msgstr ""
+
+#: bot.php:1695
+msgid "Nessuno"
+msgstr ""
+
+#: bot.php:1710 bot.php:1719 bot.php:1731
+msgid "Nuovo gruppo"
+msgstr ""
+
+#: bot.php:1728
+msgid "Seleziona un gruppo per vederne i membri:"
+msgstr ""
+
+#: bot.php:1753
+msgid "Nessuna assenza registrata"
+msgstr ""
+
+#: bot.php:1815
+msgid "Nessun ospite registrato"
+msgstr ""
+
+#: bot.php:1842
+msgid "Nessun turno in programma"
+msgstr ""
+
+#: bot.php:1857
+msgid "Seleziona un turno per visualizzarlo"
+msgstr ""
+
+#: bot.php:1882
+msgid "Scegli cosa vuoi esportare"
+msgstr ""
+
+#: bot.php:1891 bot.php:1962 bot.php:2032
+msgid "Imposta un email per poter ricevere il file"
+msgstr ""
+
+#: bot.php:1945
+msgid "Lista utenti registrati al "
+msgstr ""
+
+#: bot.php:1949 bot.php:2019 bot.php:2083
+msgid "Si è verificato un errore nell'inviare l'email"
+msgstr ""
+
+#: bot.php:1952 bot.php:2022 bot.php:2086
+msgid ""
+"Email inviata correttamente, controlla la tua casella di posta elettronica "
+"per consultare il file"
+msgstr ""
+
+#: bot.php:2015
+msgid "Lista ospiti registrati al "
+msgstr ""
+
+#: bot.php:2079
+msgid "Lista assenze registrate al "
+msgstr ""
+
+#: bot.php:2114
+msgid "Seleziona un turno per visualizzarne il calendario"
+msgstr ""
+
+#: bot.php:2128
+msgid "Non risulta registrato nessun turno"
+msgstr ""
+
+#: bot.php:2144
+msgid "Seleziona un turno per visualizzarlo e modificarlo"
+msgstr ""
+
+#: bot.php:2176
+msgid "Nessun utente disponibile"
+msgstr ""
+
+#: bot.php:2180
+msgid "Con chi vuoi fare a scambio di gruppo?"
+msgstr ""
+
+#: bot.php:2213
+msgid "Quali manutenzioni vuoi visualizzare?"
+msgstr ""
+
+#: bot.php:2213 bot.php:2215
+msgid "Da risolvere"
+msgstr ""
+
+#: bot.php:2213 bot.php:2246
+msgid "Risolte"
+msgstr ""
+
+#: bot.php:2219
+msgid "Nessuna manutenzione da fare"
+msgstr ""
+
+#: bot.php:2232 bot.php:2257
+msgid "Data segnalazione: "
+msgstr ""
+
+#: bot.php:2237
+msgid "Risolta"
+msgstr ""
+
+#: bot.php:2250
+msgid "Nessuna manutenzione risolta"
+msgstr ""
+
+#: bot.php:2258
+msgid "Risolto da: "
+msgstr ""
+
+#: bot.php:2259
+msgid "Data risoluzione: "
+msgstr ""
+
+#: bot.php:2267 bot.php:2272
+msgid "Italiano"
+msgstr ""
+
+#: bot.php:2270
+msgid "Seleziona la lingua"
+msgstr ""
+
+#: bot.php:2274
+msgid "Lingua italiana impostata"
+msgstr ""
+
+#: bot.php:2277 bot.php:2285
+msgid "Si è verificato un problema nell'impostare la lingua da te richiesta"
+msgstr ""
+
+#: bot.php:2280
+msgid "Inglese"
+msgstr ""
+
+#: bot.php:2282
+msgid "The English language has been set"
+msgstr ""
+
+#: bot.php:2314
+msgid "risulta già senza una camera assegnata"
+msgstr ""
+
+#: bot.php:2317
+msgid " è già in camera "
+msgstr ""
+
+#: bot.php:2330
+msgid "Non è stato possibile assegnare "
+msgstr ""
+
+#: bot.php:2330
+msgid " alla camera "
+msgstr ""
+
+#: bot.php:2334
+msgid "Camera modificata"
+msgstr ""
+
+#: bot.php:2348
+msgid "Sei stato assegnato alla camera "
+msgstr ""
+
+#: bot.php:2363
+msgid "Utenti in camera"
+msgstr ""
+
+#: bot.php:2366
+msgid "Vuota"
+msgstr ""
+
+#: bot.php:2380
+msgid "Aggiungi ad un gruppo"
+msgstr ""
+
+#: bot.php:2411
+msgid "Attendi che "
+msgstr ""
+
+#: bot.php:2411
+msgid " accetti o rifiuti lo scambio"
+msgstr ""
+
+#: bot.php:2419
+msgid "Accetto"
+msgstr ""
+
+#: bot.php:2420
+msgid "Rifiuto"
+msgstr ""
+
+#: bot.php:2439
+msgid " ti propone di passare da "
+msgstr ""
+
+#: bot.php:2458
+msgid "Bentornato, come posso aiutarti?"
+msgstr ""
+
+#: bot.php:2487
+msgid "Reset completato"
+msgstr ""
+
+#: bot.php:2505
+msgid "Non è stato possibile inserire l'utente nel gruppo "
+msgstr ""
+
+#: bot.php:2516
+msgid " inserito nel gruppo "
+msgstr ""
+
+#: bot.php:2519 bot.php:2563
+msgid "Sei stato inserito nel gruppo "
+msgstr ""
+
+#: bot.php:2532
+msgid "Non è stato possibile rimuovere l'utente dal gruppo "
+msgstr ""
+
+#: bot.php:2542
+msgid " rimosso dal gruppo "
+msgstr ""
+
+#: bot.php:2545
+msgid "Sei stato rimosso dal gruppo "
+msgstr ""
+
+#: bot.php:2559
+msgid "Non è stato possibile inserire"
+msgstr ""
+
+#: bot.php:2559
+msgid "nel gruppo "
+msgstr ""
+
+#: bot.php:2638
+msgid "Non è disponibile alcun gruppo per effettuare lo scambio"
+msgstr ""
+
+#: bot.php:2645
+msgid "Scegli lo scambio da fare:"
+msgstr ""
+
+#: bot.php:2674 bot.php:2684 bot.php:2755 bot.php:3189
+msgid "Turno"
+msgstr ""
+
+#: bot.php:2675
+msgid "Il turno inizierà il"
+msgstr ""
+
+#: bot.php:2675
+msgid "con il gruppo"
+msgstr ""
+
+#: bot.php:2688
+msgid "Ieri: Non presente nello storico"
+msgstr ""
+
+#: bot.php:2691
+msgid "Ieri: "
+msgstr ""
+
+#: bot.php:2696
+msgid "Oggi: Non presente nello storico"
+msgstr ""
+
+#: bot.php:2699 bot.php:2712
+msgid "Oggi: "
+msgstr ""
+
+#: bot.php:2704
+msgid " giorni fà: Non presente nello storico"
+msgstr ""
+
+#: bot.php:2707
+msgid " giorni fà: "
+msgstr ""
+
+#: bot.php:2715
+msgid "Domani: "
+msgstr ""
+
+#: bot.php:2718
+msgid "Tra"
+msgstr ""
+
+#: bot.php:2718
+msgid "giorni: "
+msgstr ""
+
+#: bot.php:2734
+msgid "Tuo prossimo: "
+msgstr ""
+
+#: bot.php:2768
+msgid ""
+"Nelle date successive i turni verranno eseguiti ciclicamente dai gruppi "
+"nell'ordine mostrato"
+msgstr ""
+
+#: bot.php:2825
+msgid "Inserisci Nome e Cognome dell'ospite da registrare:"
+msgstr ""
+
+#: bot.php:2834
+msgid "Usa le frecce per selezionare la data di arrivo dell'ospite"
+msgstr ""
+
+#: bot.php:2848 bot.php:2859
+msgid "La foto inviata non è valida, scatta semplicemente una foto ed inviala"
+msgstr ""
+
+#: bot.php:2871
+msgid ""
+"Registrazione non riuscita, l'ospite deve essere registrato e confermato con "
+"2 giorni d'anticipo, prova a ricontrollare le date inserite"
+msgstr ""
+
+#: bot.php:2950
+msgid " vorrebbe ospitare qualcuno nella vostra camera dal "
+msgstr ""
+
+#: bot.php:2999
+msgid "Nuovo ospite presente in camera "
+msgstr ""
+
+#: bot.php:3010
+msgid "Ospite in camera "
+msgstr ""
+
+#: bot.php:3011
+msgid "Nuovo ospite , "
+msgstr ""
+
+#: bot.php:3011
+msgid " in camera "
+msgstr ""
+
+#: bot.php:3020
+msgid ""
+"Si è verificato un errore nell'inviare la mail con i documenti dell'ospite "
+"alla tua e-mail: \n"
+msgstr ""
+
+#: bot.php:3027
+msgid "Si è verificato un problema nella registrazione dell'ospite"
+msgstr ""
+
+#: bot.php:3157
+msgid "Cambia nome"
+msgstr ""
+
+#: bot.php:3161
+msgid "Cambia camera"
+msgstr ""
+
+#: bot.php:3165
+msgid "Inserisci in gruppo"
+msgstr ""
+
+#: bot.php:3166
+msgid "Rimuovi da gruppo"
+msgstr ""
+
+#: bot.php:3171
+msgid "Disabilita"
+msgstr ""
+
+#: bot.php:3174
+msgid "Abilita"
+msgstr ""
+
+#: bot.php:3190 bot.php:3206
+msgid "Frequenza"
+msgstr ""
+
+#: bot.php:3190
+msgid "giorni"
+msgstr ""
+
+#: bot.php:3191
+msgid "Prima esecuzione"
+msgstr ""
+
+#: bot.php:3193 bot.php:3197
+msgid "Ultima esecuzione"
+msgstr ""
+
+#: bot.php:3193
+msgid "Mai eseguito"
+msgstr ""
+
+#: bot.php:3194 bot.php:3198
+msgid "Step corrente"
+msgstr ""
+
+#: bot.php:3194
+msgid "parte da"
+msgstr ""
+
+#: bot.php:3200 bot.php:3207
+msgid "Utenti per gruppo"
+msgstr ""
+
+#: bot.php:3201
+msgid "Frequenza gruppo"
+msgstr ""
+
+#: bot.php:3264
+msgid "Risultano registrati "
+msgstr ""
+
+#: bot.php:3264
+msgid " utenti"
+msgstr ""
+
+#: bot.php:3297
+msgid "Nome:"
+msgstr ""
+
+#: bot.php:3300
+msgid "Username:"
+msgstr ""
+
+#: bot.php:3304
+msgid "Camera:"
+msgstr ""
+
+#: bot.php:3307
+msgid "Camera: Nessuna"
+msgstr ""
+
+#: bot.php:3310
+msgid "Tipo:"
+msgstr ""
+
+#: bot.php:3312
+msgid "Gruppo"
+msgstr ""
+
+#: bot.php:3315
+msgid "Privato"
+msgstr ""
+
+#: bot.php:3318
+msgid "Canale"
+msgstr ""
+
+#: bot.php:3321
+msgid "Super-gruppo"
+msgstr ""
+
+#: bot.php:3325
+msgid "Email:"
+msgstr ""
+
+#: bot.php:3328
+msgid "Email: Non impostata"
+msgstr ""
+
+#: bot.php:3331
+msgid "Data iscrizione:"
+msgstr ""
+
+#: bot.php:3332
+msgid "Tipo di account:"
+msgstr ""
