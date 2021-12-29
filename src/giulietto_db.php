@@ -1018,6 +1018,25 @@ class GiuliettoDB
         }
     }
 
+    /**
+     * @param $name string
+     * @return bool
+     */
+    public function deleteGroup(string $name): bool
+    {
+        try{
+            $query = "DELETE FROM Squad WHERE Name = ?;";
+            $stmt = $this->_conn->prepare($query);
+            $stmt->bind_param('s', $name);
+
+            return $stmt->execute();
+        }
+        catch(Exception $e) {
+            $this->_log->append($e->getCode() . " " . $e->getMessage() . "\n" . $e->getTraceAsString(), "error");
+            return false;
+        }
+    }
+
 
 //Member Table
 
