@@ -403,7 +403,9 @@
                         exit;
                     }
 
-                    if($db->insertAbsence($chatID, date('Y-m-d',$calendar['FirstDate']), date('Y-m-d',$calendar['SecondDate']))){
+                    $res = $db->insertAbsence($chatID, date('Y-m-d',$calendar['FirstDate']), date('Y-m-d',$calendar['SecondDate']));
+
+                    if($res){
                         $bot->sendMessage(_("Nuova assenza registrata dal").' '.strftime('%d %h %Y',$calendar['FirstDate']).' '._('al').' '.strftime('%d %h %Y',$calendar['SecondDate']));
 
                         $users = $db->getAllUsersForNotification('NewAbsence');
@@ -414,6 +416,9 @@
                                 $bot->sendMessage($user['FullName'].' '._('sarà assente dal').' '.strftime('%d %h %Y',$calendar['FirstDate']).' '._('al').' '. strftime('%d %h %Y',$calendar['SecondDate']));
                             }
                         }
+                    }
+                    elseif($res === 1){
+                        $bot->sendMessage(_('Esiste già un assenza registrata che si sovrappone alla nuova da te inserita, puoi modificare quella già registrata dalla sezione \'Le mie assenza\''));
                     }
                     else{
                         $bot->sendMessage(_("Non è stato possibile registrare l'assenza"));
