@@ -403,9 +403,35 @@
                         exit;
                     }
 
-                    $res = $db->insertAbsence($chatID, date('Y-m-d',$calendar['FirstDate']), date('Y-m-d',$calendar['SecondDate']));
+                    try{
+                        $db->insertAbsence($chatID, date('Y-m-d',$calendar['FirstDate']), date('Y-m-d',$calendar['SecondDate']));
 
-                    if($res){
+                        $bot->sendMessage(_("Nuova assenza registrata dal").' '.strftime('%d %h %Y',$calendar['FirstDate']).' '._('al').' '.strftime('%d %h %Y',$calendar['SecondDate']));
+
+                        $users = $db->getAllUsersForNotification('NewAbsence');
+
+                        while($row = $users->fetch_assoc()){
+                            if($row['ChatID'] !== $chatID){
+                                $bot->setChatID($row['ChatID']);
+                                $bot->sendMessage($user['FullName'].' '._('sarà assente dal').' '.strftime('%d %h %Y',$calendar['FirstDate']).' '._('al').' '. strftime('%d %h %Y',$calendar['SecondDate']));
+                            }
+                        }
+                    }
+                    catch(Exception $e){
+                        if($e->getMessage() == 'Date overlap'){
+                            $bot->sendMessage(_('Esiste già un assenza registrata che si sovrappone alla nuova da te inserita, puoi modificare quella già registrata dalla sezione \'Le mie assenza\''));
+                        }
+                        else{
+                            $bot->sendMessage(_("Non è stato possibile registrare l'assenza"));
+                        }
+                    }
+
+
+                    /*$res = $db->insertAbsence($chatID, date('Y-m-d',$calendar['FirstDate']), date('Y-m-d',$calendar['SecondDate']));
+
+                    $bot->sendMessage(gettype($res).": ".json_encode($res));
+
+                    if($res === true){
                         $bot->sendMessage(_("Nuova assenza registrata dal").' '.strftime('%d %h %Y',$calendar['FirstDate']).' '._('al').' '.strftime('%d %h %Y',$calendar['SecondDate']));
 
                         $users = $db->getAllUsersForNotification('NewAbsence');
@@ -418,11 +444,9 @@
                         }
                     }
                     elseif($res === 1){
-                        $bot->sendMessage(_('Esiste già un assenza registrata che si sovrappone alla nuova da te inserita, puoi modificare quella già registrata dalla sezione \'Le mie assenza\''));
                     }
                     else{
-                        $bot->sendMessage(_("Non è stato possibile registrare l'assenza"));
-                    }
+                    }*/
                 }
                 elseif($calendar['Type'] == 'UpdateAbsence'){
 

@@ -634,32 +634,21 @@ class GiuliettoDB
      * @param string $leavingDate The date when the use leave the house, the format is Y-m-d
      * @param string $returnDate The date when the use return to the house, the format is Y-m-d
      *
-     * @return boolean|int
-     *      True - On success<br>
-     *      1    - If there is an absence registered that overlaps the new one inserted<br>
-     *      2    - If retunrDate is prior to leavinddate<br>
-     *      False otherwise
+     * @throws Exception
      */
-    public function insertAbsence(int $chatID, string $leavingDate, string $returnDate): bool
+    public function insertAbsence(int $chatID, string $leavingDate, string $returnDate)
     {
         try{
             $query = "INSERT INTO Absence (User, LeavingDate, ReturnDate) VALUES (?,?,?);";
             $stmt = $this->_conn->prepare($query);
             $stmt->bind_param('iss', $chatID, $leavingDate, $returnDate);
 
-            return $stmt->execute();
+            $stmt->execute();
         }
         catch(Exception $e) {
             $this->_log->append($e->getCode() . " " . $e->getMessage() . "\n" . $e->getTraceAsString(), "error");
 
-            if($e->getMessage() == 'Date overlap'){
-                return 1;
-            }
-            elseif($e->getMessage() == 'returnDate antecedente a leavingDate'){
-                return 2;
-            }
-
-            return false;
+            throw new Exception($e->getMessage(), $e->getCode());
         }
     }
 
