@@ -122,10 +122,10 @@
     $array_keyboard = createPermissionKeyboard($permission, MAIN_KEYBOARD_TEXT);
 
     if(($permission["ExportUserList"] or $permission["ExportGuest"] or $permission["ExportAbsence"]) == true){
-        $array_keyboard[] = [['text' => _("Esporta")." \u{1F4DD}"], ['text' => _("Cambia lingua")." \u{1F524}"]];
+        $array_keyboard[] = [['text' => _("Esporta")." \u{1F4DD}"], ['text' => _('Impostazioni')."\u{2699}"]];
     }
     else{
-        $array_keyboard[] = [['text' => _("Cambia lingua")." \u{1F524}"]];
+        $array_keyboard[] = [['text' => _('Impostazioni')."\u{2699}"]];
     }
 
     $keyboard = json_encode(['keyboard'=>  $array_keyboard, 'resize_keyboard'=> true] ,JSON_PRETTY_PRINT);
@@ -425,28 +425,6 @@
                             $bot->sendMessage(_("Non è stato possibile registrare l'assenza"));
                         }
                     }
-
-
-                    /*$res = $db->insertAbsence($chatID, date('Y-m-d',$calendar['FirstDate']), date('Y-m-d',$calendar['SecondDate']));
-
-                    $bot->sendMessage(gettype($res).": ".json_encode($res));
-
-                    if($res === true){
-                        $bot->sendMessage(_("Nuova assenza registrata dal").' '.strftime('%d %h %Y',$calendar['FirstDate']).' '._('al').' '.strftime('%d %h %Y',$calendar['SecondDate']));
-
-                        $users = $db->getAllUsersForNotification('NewAbsence');
-
-                        while($row = $users->fetch_assoc()){
-                            if($row['ChatID'] !== $chatID){
-                                $bot->setChatID($row['ChatID']);
-                                $bot->sendMessage($user['FullName'].' '._('sarà assente dal').' '.strftime('%d %h %Y',$calendar['FirstDate']).' '._('al').' '. strftime('%d %h %Y',$calendar['SecondDate']));
-                            }
-                        }
-                    }
-                    elseif($res === 1){
-                    }
-                    else{
-                    }*/
                 }
                 elseif($calendar['Type'] == 'UpdateAbsence'){
 
@@ -2291,6 +2269,15 @@
 
                         $bot->sendMessage($msg);
                     }
+                }
+                elseif($update["text"] == _('Impostazioni')."\u{2699}"){
+                    $key = array(
+                        _("Cambia lingua")." \u{1F524}",
+                        //_("Formato data")
+                    );
+
+                    $roomsKeyboard = createUserKeyboard($key,[[['text' => "\u{1F3E1}"]]]);
+                    $bot->sendMessage(_('Menu impostazioni: '), $roomsKeyboard);
                 }
                 elseif($update["text"] == _("Cambia lingua")." \u{1F524}"){
                     $langArrayKeyboard[] = [['text' => _("Italiano")]];
