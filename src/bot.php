@@ -712,9 +712,9 @@
             }
             elseif(preg_match("/^(deleteUser)(-)(-?\d+)$/",$update["data"],$words)){
                 if($permission['DeleteUser']){
-                    $bot->deleteMessage($callbackMessageID);
 
                     $file['ChatID'] = $words[3];
+                    $file['CallbackMessageID'] = $callbackMessageID;
                     file_put_contents(TmpFileUser_path.'deleteUser.json', json_encode($file, JSON_PRETTY_PRINT));
 
                     $otp['Type'] = 'DeleteUser';
@@ -722,7 +722,7 @@
                     file_put_contents(TmpFileUser_path.'otp.json', json_encode($otp, JSON_PRETTY_PRINT));
 
                     $msg = _('Eliminando un utente verranno eliminate in automatico anche tutte le sue assenze registrate, i suoi ospiti e verrà rimosso da tutti i gruppi di cui fa parte. Per confermare l\'eliminazione scrivi il seguente codice:');
-                    $bot->sendMessageForceReply($msg);
+                    $bot->sendMessage($msg);
                     $bot->sendMessage($otp['OTP']);
                 }
             }
@@ -883,6 +883,21 @@
                     $db->setMaintenanceAsDone($bot->getChatID(),$words[3]);
                 }
             }
+            elseif(preg_match("/^(deleteGroup)(-)(\w+)$/",$update["data"],$words)){
+                if($permission['DeleteGroup']){
+
+                    $file['GroupName'] = $words[3];
+                    $file['CallbackMessageID'] = $callbackMessageID;
+                    file_put_contents(TmpFileUser_path.'deleteGroup.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                    $otp['Type'] = 'DeleteGroup';
+                    $otp['OTP'] = rand(1000,9999);
+                    file_put_contents(TmpFileUser_path.'otp.json', json_encode($otp, JSON_PRETTY_PRINT));
+
+                    $bot->sendMessage(_('Per confermare l\'eliminazione scrivi il seguente codice:'));
+                    $bot->sendMessage($otp['OTP']);
+                }
+            }
         }
         else{
             $bot->sendMessage(_("Il tuo account è stato disabilitato, non ti sarà possibile utilizzare il bot fino a quando non verrà riattivato."));
@@ -939,7 +954,82 @@
 
                 $keyOfText = array_search($update["text"],MAIN_KEYBOARD_TEXT);
 
-                if($update["reply_to_message"]["text"] == _("Invia il file con le nuove linee guida:")){
+                if(file_exists(TmpFileUser_path.'otp.json')){
+                    $otp = file_get_contents(TmpFileUser_path.'otp.json');
+                    $otp = json_decode($otp, true);
+
+                    if($otp['Type'] == 'DeleteUser'){
+                        if($permission["DeleteUser"] == false){
+                            $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                            exit;
+                        }
+
+                        $deleteUser = file_get_contents(TmpFileUser_path.'deleteUser.json');
+                        $deleteUser = json_decode($deleteUser, true);
+                        $_user = $db->getUser($deleteUser['ChatID']);
+
+                        if ($otp['OTP'] == $update['text']) {
+                            if($db->deleteUser($deleteUser['ChatID'])){
+                                $bot->deleteMessage($deleteUser['CallbackMessageID']);
+                                $bot->sendMessage($_user['FullName']._(' eliminato'), $keyboard);
+                            }
+                            else{
+                                $bot->sendMessage(_("Non è stato possibile eliminare l'utente"), $keyboard);
+                            }
+                        }
+                        else{
+                            $bot->sendMessage(_('Il codice inserito non è valido, l\'utente non verrà eliminato'), $keyboard);
+                        }
+
+                        unlink(TmpFileUser_path.'otp.json');
+                        unlink(TmpFileUser_path.'deleteUser.json');
+                    }
+                    elseif($otp['Type'] == 'DeleteGroup'){
+                        if($permission['DeleteGroup'] == false){
+                            $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                            exit;
+                        }
+
+                        $group = file_get_contents(TmpFileUser_path.'deleteGroup.json');
+                        $group = json_decode($group, true);
+
+                        if($db->deleteGroup($group['GroupName'])){
+                            $bot->deleteMessage($group['CallbackMessageID']);
+
+                            $groupList = $db->getGroupList();
+
+                            if($groupList === false){
+                                $bot->sendMessage(_("Non è stato possibile recuperare la lista dei gruppi"));
+                            }
+                            elseif(sizeof($groupList) == 0) {
+                                if($permission['NewGroup']){
+                                    $groupKeyboard = createUserKeyboard(null, [ [ ['text' => _("Nuovo gruppo")] ], [['text' => "\u{1F3E1}"]] ]);
+                                    $bot->sendMessage(_('Gruppo eliminato'), $groupKeyboard);
+                                }
+                            }
+                            else{
+                                if($permission['NewGroup']){
+                                    $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => _("Nuovo gruppo")]], [['text' => "\u{1F3E1}"]] ]);
+                                }
+                                else{
+                                    $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => "\u{1F3E1}"]] ]);
+                                }
+
+                                $file['Type'] = 'viewUserInGroup';
+                                file_put_contents(TmpFileUser_path.'selectGroup.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                                $bot->sendMessage(_('Gruppo eliminato'), $groupKeyboard);
+                            }
+                        }
+                        else{
+                            $bot->sendMessage(_("Non è stato possibile cancellare il gruppo"));
+                        }
+
+                        unlink(TmpFileUser_path.'otp.json');
+                        unlink(TmpFileUser_path.'deleteGroup.json');
+                    }
+                }
+                elseif($update["reply_to_message"]["text"] == _("Invia il file con le nuove linee guida:")){
 
                     if($permission["NewGuideLine"] == false){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
@@ -1076,7 +1166,7 @@
 
                         $bot->sendMessage(_('Nome modificato'), $usersKeyboard);
 
-                        sendUser($db->getUser($_chatID), $permission,  TMP_FILE_PATH.$newName.'/messageInLineKeyboard.json');
+                        sendUser($db->getUser($_chatID));
                     }
                     else{
                         $users = $db->getUserList(false);
@@ -1093,7 +1183,7 @@
 
                     unlink(TmpFileUser_path.'changeNameUser.json');
                 }
-                elseif($update["reply_to_message"]["text"] == _('Eliminando un utente verranno eliminate in automatico anche tutte le sue assenze registrate, i suoi ospiti e verrà rimosso da tutti i gruppi di cui fa parte. Per confermare l\'eliminazione scrivi il seguente codice:')){
+                /*elseif($update["reply_to_message"]["text"] == _('Eliminando un utente verranno eliminate in automatico anche tutte le sue assenze registrate, i suoi ospiti e verrà rimosso da tutti i gruppi di cui fa parte. Per confermare l\'eliminazione scrivi il seguente codice:')){
 
                     if($permission["DeleteUser"] == false){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
@@ -1126,7 +1216,7 @@
 
                     unlink(TmpFileUser_path.'otp.json');
                     unlink(TmpFileUser_path.'deleteUser.json');
-                }
+                }*/
                 elseif($update["reply_to_message"]["text"] == _('Invia la nuova frequenza del turno:')){
                     if($permission["EditTypeOfTurn"] == false){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
@@ -1390,12 +1480,8 @@
                             foreach (array_keys($groupList) as $key){
                                 $i++;
                                 $userInGroup = $db->getUserInGroup($key);
-                                if($i == $rowNumber){
-                                    $bot->sendMessage(userInGroup($key,$userInGroup),$keyboard);
-                                }
-                                else{
-                                    $bot->sendMessage(userInGroup($key,$userInGroup));
-                                }
+
+                                sendUserInGroup($key,$userInGroup);
                             }
 
                             $myChatID = $chatID;
@@ -1615,12 +1701,8 @@
                     foreach ($groupList as $key => $value){
                         $i++;
                         $userList = $db->getUserInGroup($key);
-                        if($i == $rowNumber){
-                            $bot->sendMessage(userInGroup($key,$userList),$keyboard);
-                        }
-                        else{
-                            $bot->sendMessage(userInGroup($key,$userList));
-                        }
+
+                        sendUserInGroup($key,$userList);
                     }
                 }
                 elseif($update["text"] == _("Modifica email")." \u{1F4E7}"){
@@ -2365,7 +2447,7 @@
                             }
                             $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
 
-                            sendUser($db->getUser($_chatID), $permission, $messageInLineKeyboardPath);
+                            sendUser($db->getUser($_chatID));
 
                             if($_chatID != $chatID){
                                 $bot->setChatID($_chatID);
@@ -2524,7 +2606,7 @@
 
                         $_user = $db->getUser($purpose['ChatID']);
 
-                        sendUser($_user, $permission, $messageInLineKeyboardPath);
+                        sendUser($_user);
 
                         if(!$db->insertUserInGroup($purpose['ChatID'], $update['text'])){
                             $bot->sendMessage(_("Non è stato possibile inserire l'utente nel gruppo ").$update['text'],$keyboard);
@@ -2542,7 +2624,7 @@
 
                             $bot->setChatID($purpose['ChatID']);
                             $bot->sendMessage(_("Sei stato inserito nel gruppo ").$update['text']);
-                            $bot->sendMessage(userInGroup($update['text'], $db->getUserInGroup($update['text'])));
+                            sendUserInGroup($update['text'], $db->getUserInGroup($update['text']));
                         }
 
                         unlink(TmpFileUser_path.'selectGroup.json');
@@ -2551,7 +2633,7 @@
 
                         $_user = $db->getUser($purpose['ChatID']);
 
-                        sendUser($_user, $permission, $messageInLineKeyboardPath);
+                        sendUser($_user);
 
                         if(!$db->removeUserFromGroup($purpose['ChatID'], $update['text'])){
                             $bot->sendMessage(_("Non è stato possibile rimuovere l'utente dal gruppo ").$update['text'],$keyboard);
@@ -2606,13 +2688,14 @@
 
                         $bot->setChatID($myChatID);
                         $userInGroup = $db->getUserInGroup($update['text']);
-                        $bot->sendMessage(userInGroup($update['text'], $userInGroup), $roomsKeyboard);
+                        sendUserInGroup($update['text'], $userInGroup);
+                        $bot->sendMessage(_('Camere'), $roomsKeyboard);
 
                         unlink(TmpFileUser_path.'selectGroup.json');
                     }
                     elseif($purpose['Type'] == 'viewUserInGroup'){
                         $userList = $db->getUserInGroup($update["text"]);
-                        $bot->sendMessage(userInGroup($update["text"],$userList));
+                        sendUserInGroup($update['text'], $userList, true);
                     }
                     else{
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
@@ -2632,7 +2715,7 @@
 
                     if($selectType['Type'] == 'SelectUserForEdit'){
 
-                        sendUser($db->getUser($db->getChatID($update['text'])), $permission, $messageInLineKeyboardPath);
+                        sendUser($db->getUser($db->getChatID($update['text'])));
 
                     }
                     elseif($selectType['Type'] == 'SelectUserForSwapTurn'){
@@ -3119,8 +3202,12 @@ function createUserKeyboard($buttonTextList, $end = [], $oneTimeKeyboard = false
     return json_encode(['keyboard'=> $keyboard, 'resize_keyboard'=> true, 'one_time_keyboard'=>$oneTimeKeyboard],JSON_PRETTY_PRINT);
 }
 
-function userInGroup($groupName, $userInGroup): string
+function sendUserInGroup($groupName, $userInGroup, $keyboard = false)
 {
+    global $bot;
+    global $permission;
+    global $messageInLineKeyboardPath;
+
     $msg = "- - - - - - - - - - ".$groupName." - - - - - - - - - - \n";
 
     if(count($userInGroup) == 0){
@@ -3138,7 +3225,26 @@ function userInGroup($groupName, $userInGroup): string
             }
         }
     }
-    return $msg;
+
+    if($keyboard){
+        $keyboardGroupFirstRow = [];
+
+        if($permission['DeleteGroup']){
+            $keyboardGroupFirstRow[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteGroup-$groupName"];
+        }
+
+        $keyboard = json_encode(['inline_keyboard'=> [$keyboardGroupFirstRow] ],JSON_PRETTY_PRINT);
+
+        $msgResult = json_decode($bot->sendMessage($msg, $keyboard),true);
+
+        $messageInLineKeyboard = file_get_contents($messageInLineKeyboardPath);
+        $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);
+        $messageInLineKeyboard[$msgResult["result"]["message_id"]] = $msg;
+        file_put_contents($messageInLineKeyboardPath ,json_encode($messageInLineKeyboard, JSON_PRETTY_PRINT));
+    }
+    else{
+        $bot->sendMessage($msg);
+    }
 }
 
 /**
@@ -3172,6 +3278,7 @@ function createPermissionKeyboard(array $permission, $KeyText = null): array
 }
 
 function keyboardEditUser($permission, $user){
+
     $keyboardUserFirstRow = [];
     $keyboardUserSecondRow = [];
     $keyboardUserThirdRow = [];
@@ -3313,9 +3420,11 @@ function sendUserList($usersList){
     $bot->sendMessage($msg);
 }
 
-function sendUser($user, $permission, $messageInLineKeyboardPath){
+function sendUser($user){
 
     global $bot;
+    global $permission;
+    global $messageInLineKeyboardPath;
 
     $msg = "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
 
