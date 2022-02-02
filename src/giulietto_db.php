@@ -67,7 +67,7 @@ class GiuliettoDB
      * @param string $accountType The type of account
      * @param string $language
      *
-     * @return true|false Return true or false on failure
+     * @return bool Return true or false on failure
      */
     public function insertUser(int $chatID, string $fullName, ?string $username, ?int $room, string $type, string $accountType, string $language): bool
     {
