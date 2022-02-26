@@ -1555,14 +1555,27 @@
 
                         $users = $db->getAllUsersForNotification('NewReport');
 
-                        $msg = "- - - - - "._("Nuova segnalazione")." - - - - -\n";
+                        $msg = "- - - - - "._("Nuova segnalazione")." - - - - -".PHP_EOL;
                         $msg.= _("Segnalato da: ").$user['FullName'].PHP_EOL.PHP_EOL;
                         $msg.= $update["text"].PHP_EOL;
-                        $msg.= "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
+                        $msg.= "- - - - - - - - - - - - - - - - - - - - - - - - - - - -".PHP_EOL;
+
+                        $msgEmail = "- - - - - "._("Nuova segnalazione")." - - - - -<br>";
+                        $msgEmail.= _("Segnalato da: ").$user['FullName'].'<br><br>';
+                        $msgEmail.= $update["text"].'<br>';
+                        $msgEmail.= "- - - - - - - - - - - - - - - - - - - - - - - - - - - -<br>";
 
                         while($row = $users->fetch_assoc()){
                             $bot->setChatID($row['ChatID']);
                             $bot->sendMessage($msg);
+
+                            $from = 'giuliettobot@casadellostudentevillagiulia.it';
+                            $fromName = 'GiuliettoBot';
+                            $subject = _("Nuova Segnalazione");
+
+                            if (!email($row["Email"], $from, $fromName, $subject, $msgEmail, null)) {
+                                $bot->sendMessage(_("Si è verificato un errore nell'inviare la mail relativa alla segnalazione."));
+                            }
                         }
                     }
                     else{
