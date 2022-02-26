@@ -67,7 +67,7 @@ class GiuliettoDB
      * @param string $accountType The type of account
      * @param string $language
      *
-     * @return bool Return true or false on failure
+     * @return true|false Return true or false on failure
      */
     public function insertUser(int $chatID, string $fullName, ?string $username, ?int $room, string $type, string $accountType, string $language): bool
     {
@@ -943,7 +943,7 @@ class GiuliettoDB
     public function createGroup(string $groupName): bool
     {
         try{
-            $query = "INSERT INTO Squad VALUES(?);";
+            $query = "INSERT INTO Squad(Name) VALUES(?);";
             $stmt = $this->_conn->prepare($query);
             $stmt->bind_param('s',$groupName);
 

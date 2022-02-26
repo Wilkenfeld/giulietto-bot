@@ -1,17 +1,18 @@
 <?php
 
     class Log{
-        private $_fileName = LOG_FILE_PATH."unknown_log.log";
+        private $_fileName;
 
         /**
          * @param string $fileName log file path
          */
-        public function __construct(string $fileName)
+        public function __construct($fileName)
         {
-            if(!empty($fileName)){
-                $this->_fileName = $fileName;
+            if(empty($file_name)){
+                $this->_fileName = LOG_FILE_PATH."unknown_log.log";
             }
 
+            $this->_fileName = $fileName;
             if(!is_dir(dirname($fileName))){
                 mkdir(dirname($fileName).'/', 0755, true);
             }
@@ -24,7 +25,7 @@
          * 
          * @return int|false The function returns the number of bytes that were written to the file, or false on failure.
          */
-        public function append(string $text, string $typeOfLog = "UNKNOWN"){
+        public function append($text, $typeOfLog = "UNKNOWN"){
             $date = date("[Y-m-d H:i:s]", time());
 
             $typeOfLog = strtoupper($typeOfLog);

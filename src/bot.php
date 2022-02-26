@@ -954,7 +954,57 @@
 
                 $keyOfText = array_search($update["text"],MAIN_KEYBOARD_TEXT);
 
-                if(file_exists(TmpFileUser_path.'otp.json')){
+                if($update["text"] == "/start"){
+                    $bot->sendMessage(_("Bentornato, come posso aiutarti?"),$keyboard);
+                }
+                elseif($update["text"] == "/menu" or $update["text"] == "\u{1F3E1}"){
+                    $bot->sendMessage("Menù",$keyboard);
+
+                    $files = glob(TmpFileUser_path.'*'); // get all file names
+
+                    foreach($files as $file){ // iterate files
+                        if(is_file($file) and $file !== basename('tmpGuest.json') and $file !== basename('updateGuest.json') ) {
+                            unlink($file); // delete file
+                        }
+                    }
+                }
+                elseif($update["text"] == '/reset'){
+                    $files = glob(TmpFileUser_path.'*'); // get all file names
+
+                    foreach($files as $file){ // iterate files
+                        if(is_file($file)) {
+                            unlink($file); // delete file
+                        }
+                    }
+
+                    $fileLink = "https://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+                    $setWebhook = "https://api.telegram.org/bot".TOKEN."/setWebhook?url=$fileLink?drop_pending_updates=true";
+                    $res = file_get_contents($setWebhook);
+
+                    $res = json_decode($res, true);
+
+                    if($res['ok']){
+                        $bot->sendMessage(_('Reset completato'), $keyboard);
+                    }
+                    else{
+                        file_put_contents(TmpFileUser_path.'reset_setWebhook.json', json_encode($res, JSON_PRETTY_PRINT));
+                    }
+                }
+                elseif(preg_match("/^(\/broadcast)(\s+)(.*)$/",$update["text"],$words)){
+                    if($permission["BroadcastMsg"] == false){
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $usersList = $db->getUserList();
+                    $_users = [];
+                    while($row = $usersList->fetch_assoc()){
+                        $_users[] = $row['ChatID'];
+                    }
+
+                    sendNotification($_users, $words[3],$bot);
+                }
+                elseif(file_exists(TmpFileUser_path.'otp.json')){
                     $otp = file_get_contents(TmpFileUser_path.'otp.json');
                     $otp = json_decode($otp, true);
 
@@ -1027,6 +1077,9 @@
 
                         unlink(TmpFileUser_path.'otp.json');
                         unlink(TmpFileUser_path.'deleteGroup.json');
+                    }
+                    elseif($otp['Type'] == 'DeleteTypeOfTurn'){
+
                     }
                 }
                 elseif($update["reply_to_message"]["text"] == _("Invia il file con le nuove linee guida:")){
@@ -1183,40 +1236,6 @@
 
                     unlink(TmpFileUser_path.'changeNameUser.json');
                 }
-                /*elseif($update["reply_to_message"]["text"] == _('Eliminando un utente verranno eliminate in automatico anche tutte le sue assenze registrate, i suoi ospiti e verrà rimosso da tutti i gruppi di cui fa parte. Per confermare l\'eliminazione scrivi il seguente codice:')){
-
-                    if($permission["DeleteUser"] == false){
-                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                        exit;
-                    }
-
-                    $_chatID = file_get_contents(TmpFileUser_path.'deleteUser.json');
-                    $_chatID = json_decode($_chatID, true);
-                    $_chatID = $_chatID['ChatID'];
-                    $_user = $db->getUser($_chatID);
-
-                    $otp = file_get_contents(TmpFileUser_path.'otp.json');
-                    $otp = json_decode($otp, true);
-
-                    if($otp['Type'] == 'DeleteUser') {
-
-                        if ($otp['OTP'] == $update['text']) {
-                            if($db->deleteUser($_chatID)){
-                                $bot->sendMessage($_user['FullName']._(' eliminato'), $keyboard);
-                            }
-                            else{
-                                $bot->sendMessage(_("Non è stato possibile eliminare l'utente"), $keyboard);
-                            }
-                        }
-                        else{
-                            $bot->sendMessage(_('Il codice inserito non è valido, l\'utente non verrà eliminato'), $keyboard);
-                        }
-
-                    }
-
-                    unlink(TmpFileUser_path.'otp.json');
-                    unlink(TmpFileUser_path.'deleteUser.json');
-                }*/
                 elseif($update["reply_to_message"]["text"] == _('Invia la nuova frequenza del turno:')){
                     if($permission["EditTypeOfTurn"] == false){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
@@ -1550,6 +1569,43 @@
                         $bot->sendMessage(_("Si è verificato un errore nella registrazione della segnalazione"), $keyboard);
                     }
                 }
+                elseif($update["reply_to_message"]["text"] == _('Scrivi il nome del gruppo:')){
+                    if($permission["NewGroup"] == false){
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    if($db->createGroup($update['text'])){
+
+                        $groupList = $db->getGroupList();
+
+                        if($groupList === false){
+                            $bot->sendMessage(_("Non è stato possibile recuperare la lista dei gruppi"));
+                        }
+                        elseif(sizeof($groupList) == 0) {
+                            if($permission['NewGroup']){
+                                $groupKeyboard = createUserKeyboard(null, [ [ ['text' => _("Nuovo gruppo")] ], [['text' => "\u{1F3E1}"]] ]);
+                                $bot->sendMessage(_('Nuovo gruppo creato'), $groupKeyboard);
+                            }
+                        }
+                        else{
+                            if($permission['NewGroup']){
+                                $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => _("Nuovo gruppo")]], [['text' => "\u{1F3E1}"]] ]);
+                            }
+                            else{
+                                $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => "\u{1F3E1}"]] ]);
+                            }
+
+                            $file['Type'] = 'viewUserInGroup';
+                            file_put_contents(TmpFileUser_path.'selectGroup.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                            $bot->sendMessage(_('Nuovo gruppo creato'), $groupKeyboard);
+                        }
+                    }
+                    else{
+                        $bot->sendMessage("Errore nella creazione del gruppo", $keyboard);
+                    }
+                }
                 elseif($update["text"] == _("Linee guida")." \u{1F4D6}") { //invia il pdf con le linee guida
                     if(file_exists(FILES_PATH."/Linee_guida.pdf")){
 
@@ -1824,8 +1880,59 @@
                         exit;
                     }
 
-                    $bot->sendMessage('Da fare');
+                    if(!empty(getDirFiles(FILES_PATH.'Nomi_gruppi', 'txt'))){
+                        $newGroupKeyboard = createUserKeyboard([_('Nome casuale'), _('Manualmente')], [[['text' => "\u{1F3E1}"]]]);
+                        $bot->sendMessage(_('Come vuoi inserire il nome?'), $newGroupKeyboard);
+                    }
+                    else{
+                        $bot->sendMessageForceReply(_('Scrivi il nome del gruppo:'));
+                    }
+                }
+                elseif($update['text'] == _("Manualmente")){
+                    $bot->sendMessageForceReply(_('Scrivi il nome del gruppo:'));
+                }
+                elseif($update['text'] == _("Nome casuale")){
 
+                    if($permission["NewGroup"] == false){
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $filesName = getDirFiles(FILES_PATH.'Nomi_gruppi', 'txt');
+                    $groupNameskeyboard = createUserKeyboard($filesName, [[['text' => 'Tutti'],['text' => "\u{1F3E1}"]]]);
+
+                    $bot->sendMessage('Scegli quale lista usare, scegliendo \'Tutti\' ne verrà usata una casuale:', $groupNameskeyboard);
+
+                    /*if($db->createGroup(rand(10,100))){
+
+                       $groupList = $db->getGroupList();
+
+                       if($groupList === false){
+                           $bot->sendMessage(_("Non è stato possibile recuperare la lista dei gruppi"));
+                       }
+                       elseif(sizeof($groupList) == 0) {
+                           if($permission['NewGroup']){
+                               $groupKeyboard = createUserKeyboard(null, [ [ ['text' => _("Nuovo gruppo")] ], [['text' => "\u{1F3E1}"]] ]);
+                               $bot->sendMessage(_('Nuovo gruppo creato'), $groupKeyboard);
+                           }
+                       }
+                       else{
+                           if($permission['NewGroup']){
+                               $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => _("Nuovo gruppo")]], [['text' => "\u{1F3E1}"]] ]);
+                           }
+                           else{
+                               $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => "\u{1F3E1}"]] ]);
+                           }
+
+                           $file['Type'] = 'viewUserInGroup';
+                           file_put_contents(TmpFileUser_path.'selectGroup.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                           $bot->sendMessage(_('Nuovo gruppo creato'), $groupKeyboard);
+                       }
+                   }
+                   else{
+                       $bot->sendMessage("Errore");
+                   }*/
                 }
                 elseif($update["text"] == _("Le mie assenze")." \u{1F4CB}"){
 
@@ -2392,7 +2499,7 @@
                         $bot->sendMessage(_("Si è verificato un problema nell'impostare la lingua da te richiesta"), $keyboard);
                     }
                 }
-                elseif(preg_match('/^('._('Nessuna camera').'|(\d+))$/',$update["text"],$words)){//Modifica stanza
+                elseif(file_exists(TmpFileUser_path.'selectRoom.json') and preg_match('/^('._('Nessuna camera').'|(\d+))$/',$update["text"],$words)){//Modifica stanza
 
                     $selectType = file_get_contents(TmpFileUser_path.'selectRoom.json');
                     $selectType = json_decode($selectType, true);
@@ -2497,7 +2604,7 @@
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti") . " \u{1F97A}", $keyboard);
                     }
                 }
-                elseif(preg_match("/^([\w\s]+)( => )([\w\s]*)$/", $update['text'], $words) and array_key_exists($words[1],$db->getGroupList()) and array_key_exists($words[3],$db->getGroupList())){
+                elseif(file_exists(TmpFileUser_path.'swapGroup.json') and preg_match("/^([\w\s]+)( => )([\w\s]*)$/", $update['text'], $words) and array_key_exists($words[1],$db->getGroupList()) and array_key_exists($words[3],$db->getGroupList())){
                     $swapGroup = file_get_contents(TmpFileUser_path.'swapGroup.json');
                     $swapGroup = json_decode($swapGroup, true);
 
@@ -2547,57 +2654,7 @@
 
                     unlink(TmpFileUser_path.'swapGroup.json');
                 }
-                elseif(preg_match("/^(\/broadcast)(\s+)(.*)$/",$update["text"],$words)){
-                    if($permission["BroadcastMsg"] == false){
-                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                        exit;
-                    }
-
-                    $usersList = $db->getUserList();
-                    $_users = [];
-                    while($row = $usersList->fetch_assoc()){
-                        $_users[] = $row['ChatID'];
-                    }
-
-                    sendNotification($_users, $words[3],$bot);
-                }
-                elseif($update["text"] == "/start"){
-                    $bot->sendMessage(_("Bentornato, come posso aiutarti?"),$keyboard);
-                }
-                elseif($update["text"] == "/menu" or $update["text"] == "\u{1F3E1}"){
-                    $bot->sendMessage("Menù",$keyboard);
-
-                    $files = glob(TmpFileUser_path.'*'); // get all file names
-
-                    foreach($files as $file){ // iterate files
-                        if(is_file($file) and $file !== basename('tmpGuest.json') and $file !== basename('updateGuest.json') ) {
-                            unlink($file); // delete file
-                        }
-                    }
-                }
-                elseif($update["text"] == '/reset'){
-                    $files = glob(TmpFileUser_path.'*'); // get all file names
-
-                    foreach($files as $file){ // iterate files
-                        if(is_file($file)) {
-                            unlink($file); // delete file
-                        }
-                    }
-
-                    $fileLink = "https://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-                    $setWebhook = "https://api.telegram.org/bot".TOKEN."/setWebhook?url=$fileLink?drop_pending_updates=true";
-                    $res = file_get_contents($setWebhook);
-
-                    $res = json_decode($res, true);
-
-                    if($res['ok']){
-                        $bot->sendMessage(_('Reset completato'), $keyboard);
-                    }
-                    else{
-                        file_put_contents(TmpFileUser_path.'reset_setWebhook.json', json_encode($res, JSON_PRETTY_PRINT));
-                    }
-                }
-                elseif(array_key_exists($update["text"],$db->getGroupList())){
+                elseif(file_exists(TmpFileUser_path.'selectGroup.json') and array_key_exists($update["text"],$db->getGroupList())){
 
                     $purpose = file_get_contents(TmpFileUser_path.'selectGroup.json');
                     $purpose = json_decode($purpose, true);
@@ -2765,7 +2822,7 @@
                     }
 
                 }
-                elseif($db->getTypeOfTurn($update["text"]) != false){
+                elseif(file_exists(TmpFileUser_path.'selectTypeOfTurn.json') and $db->getTypeOfTurn($update["text"]) != false){
 
                     $file = file_get_contents(TmpFileUser_path.'selectTypeOfTurn.json');
                     $file = json_decode($file, true);
@@ -3085,7 +3142,8 @@ function checkNewGuestInput(string $text, int $chatID, string $keyboard){
     }
 }
 
-function guestInput($guest_file){
+function guestInput($guest_file): bool
+{
 
     global $bot;
     global $db;
@@ -3335,10 +3393,12 @@ function sendMessageEditTypeOfTurn($typeOfTurn, $permission, $messageInLineKeybo
     $keyboardFirstRow = [];
     $keyboardSecondRow = [];
 
-    $keyboardFirstRow[] = ['text' => _('Frequenza')." \u{270F}", 'callback_data' => "changeTypeOfTurnFrequency-".$typeOfTurn['Name']];
-    $keyboardSecondRow[] = ['text' => _('Utenti per gruppo')." \u{270F}", 'callback_data' => "changeUserByGroup-".$typeOfTurn['Name']];
+    $keyboardFirstRow[] = ['text' => _('Utenti per gruppo')." \u{270F}", 'callback_data' => "changeUserByGroup-".$typeOfTurn['Name']];
+    $keyboardSecondRow[] =['text' => _('Frequenza')." \u{270F}", 'callback_data' => "changeTypeOfTurnFrequency-".$typeOfTurn['Name']];
+    $keyboardSecondRow[] = ['text' => _('Rinomina')." \u{270F}", 'callback_data' => "changeTypeOfTurnName-".$typeOfTurn['Name']];
+    $keyboardThirdRow[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteTurn-".$typeOfTurn['Name']];
 
-    $typeOfTurnEditKeyboard =  json_encode(['inline_keyboard'=> [$keyboardFirstRow, $keyboardSecondRow] ],JSON_PRETTY_PRINT);
+    $typeOfTurnEditKeyboard =  json_encode(['inline_keyboard'=> [$keyboardFirstRow, $keyboardSecondRow, $keyboardThirdRow] ],JSON_PRETTY_PRINT);
 
     if($permission['EditTypeOfTurn']){
 
@@ -3474,4 +3534,28 @@ function sendUser($user){
     $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);
     $messageInLineKeyboard[$msgResult["result"]["message_id"]] = $msg;
     file_put_contents($messageInLineKeyboardPath ,json_encode($messageInLineKeyboard, JSON_PRETTY_PRINT));
+}
+
+function getDirFiles(string $dir, string $extension = null): array
+{
+    $dirFiles = scandir($dir);
+    $files = [];
+    foreach ($dirFiles as $file) {
+        $fileInfo = pathinfo($file);
+        if(filesize("$dir/$file") > 0){
+            $fileInfo = pathinfo($file);
+            if(is_null($extension)){
+                if(!empty($fileInfo['extension'])){
+                    $files[] = $file;
+                }
+            }
+            else{
+                if($fileInfo['extension'] == $extension){
+                    $files[] = $fileInfo['filename'];
+                }
+            }
+        }
+    }
+
+    return $files;
 }
