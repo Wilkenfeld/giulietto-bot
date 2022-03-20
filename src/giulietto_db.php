@@ -384,7 +384,6 @@ class GiuliettoDB
         try{
             $query = "SELECT U.* FROM User U INNER JOIN AccountType A ON U.AccountType = A.Name INNER JOIN Notification N ON A.Notification = N.Name WHERE N.$notification IS TRUE AND U.Enabled IS TRUE;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param("s", $notification);
             $stmt->execute();
 
             return $stmt->get_result();
@@ -394,26 +393,6 @@ class GiuliettoDB
             return false;
         }
     }
-
-    /**
-     * @param $room int
-     * @return false|mysqli_result
-     */
-    public function getUserInRoom(int $room){
-        try{
-            $query = "SELECT * FROM User U WHERE U.Room = ? AND U.Enabled IS TRUE;";
-            $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param("i", $room);
-            $stmt->execute();
-
-            return $stmt->get_result();
-        }
-        catch (Exception $e){
-            $this->_log->append($e->getCode() . " " . $e->getMessage() . "\n" . $e->getTraceAsString(), "error");
-            return false;
-        }
-    }
-
 
 //AccountType table
 
@@ -1455,14 +1434,14 @@ class GiuliettoDB
     }
 
     /**
-     * @param int $room
+     * @param $room int
      * @return false|mysqli_result
      */
-    public function getUerInRoom(int $room){
+    public function getUserInRoom(int $room){
         try{
-            $query = "SELECT * FROM Room R INNER JOIN User U ON R.Num = U.Room WHERE R.Num = ?;";
+            $query = "SELECT * FROM User U WHERE U.Room = ? AND U.Enabled IS TRUE;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('i',$room);
+            $stmt->bind_param("i", $room);
             $stmt->execute();
 
             return $stmt->get_result();
@@ -1562,7 +1541,5 @@ class GiuliettoDB
             return false;
         }
     }
-
-
 
 }
