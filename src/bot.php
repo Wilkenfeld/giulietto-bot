@@ -2602,7 +2602,7 @@
                                 $usersName[] = $row['FullName'];
                             }
                             $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
-                            
+
                             if($db->updateRoom($_chatID,$words[1]) == false){
                                 $bot->sendMessage(_("Non è stato possibile assegnare ").$user['FullName']._(" alla camera ").$words[1],$usersKeyboard);
                             }
