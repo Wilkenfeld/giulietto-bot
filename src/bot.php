@@ -898,6 +898,21 @@
                     $bot->sendMessage($otp['OTP']);
                 }
             }
+            elseif(preg_match("/^(deleteTurn)(-)(\w+)$/",$update["data"],$words)){
+                if($permission['DeleteGroup']){
+
+                    $file['TurnName'] = $words[3];
+                    $file['CallbackMessageID'] = $callbackMessageID;
+                    file_put_contents(TmpFileUser_path.'deleteTurnType.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                    $otp['Type'] = 'DeleteTurnType';
+                    $otp['OTP'] = rand(1000,9999);
+                    file_put_contents(TmpFileUser_path.'otp.json', json_encode($otp, JSON_PRETTY_PRINT));
+
+                    $bot->sendMessage(_('Per confermare l\'eliminazione scrivi il seguente codice:'));
+                    $bot->sendMessage($otp['OTP']);
+                }
+            }
         }
         else{
             $bot->sendMessage(_("Il tuo account è stato disabilitato, non ti sarà possibile utilizzare il bot fino a quando non verrà riattivato."));
@@ -1006,19 +1021,20 @@
                 }
                 elseif(file_exists(TmpFileUser_path.'otp.json')){
                     $otp = file_get_contents(TmpFileUser_path.'otp.json');
+                    unlink(TmpFileUser_path.'otp.json');
                     $otp = json_decode($otp, true);
 
-                    if($otp['Type'] == 'DeleteUser'){
-                        if($permission["DeleteUser"] == false){
-                            $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                            exit;
-                        }
+                    if ($otp['OTP'] == $update['text']) {
+                        if($otp['Type'] == 'DeleteUser'){
+                            if($permission["DeleteUser"] == false){
+                                $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                                exit;
+                            }
 
-                        $deleteUser = file_get_contents(TmpFileUser_path.'deleteUser.json');
-                        $deleteUser = json_decode($deleteUser, true);
-                        $_user = $db->getUser($deleteUser['ChatID']);
+                            $deleteUser = file_get_contents(TmpFileUser_path.'deleteUser.json');
+                            $deleteUser = json_decode($deleteUser, true);
+                            $_user = $db->getUser($deleteUser['ChatID']);
 
-                        if ($otp['OTP'] == $update['text']) {
                             if($db->deleteUser($deleteUser['ChatID'])){
                                 $bot->deleteMessage($deleteUser['CallbackMessageID']);
                                 $bot->sendMessage($_user['FullName']._(' eliminato'), $keyboard);
@@ -1026,60 +1042,94 @@
                             else{
                                 $bot->sendMessage(_("Non è stato possibile eliminare l'utente"), $keyboard);
                             }
+
+                            unlink(TmpFileUser_path.'deleteUser.json');
                         }
-                        else{
-                            $bot->sendMessage(_('Il codice inserito non è valido, l\'utente non verrà eliminato'), $keyboard);
-                        }
-
-                        unlink(TmpFileUser_path.'otp.json');
-                        unlink(TmpFileUser_path.'deleteUser.json');
-                    }
-                    elseif($otp['Type'] == 'DeleteGroup'){
-                        if($permission['DeleteGroup'] == false){
-                            $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                            exit;
-                        }
-
-                        $group = file_get_contents(TmpFileUser_path.'deleteGroup.json');
-                        $group = json_decode($group, true);
-
-                        if($db->deleteGroup($group['GroupName'])){
-                            $bot->deleteMessage($group['CallbackMessageID']);
-
-                            $groupList = $db->getGroupList();
-
-                            if($groupList === false){
-                                $bot->sendMessage(_("Non è stato possibile recuperare la lista dei gruppi"));
+                        elseif($otp['Type'] == 'DeleteGroup'){
+                            if($permission['DeleteGroup'] == false){
+                                $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                                exit;
                             }
-                            elseif(sizeof($groupList) == 0) {
-                                if($permission['NewGroup']){
-                                    $groupKeyboard = createUserKeyboard(null, [ [ ['text' => _("Nuovo gruppo")] ], [['text' => "\u{1F3E1}"]] ]);
+
+                            $group = file_get_contents(TmpFileUser_path.'deleteGroup.json');
+                            $group = json_decode($group, true);
+
+                            if($db->deleteGroup($group['GroupName'])){
+                                $bot->deleteMessage($group['CallbackMessageID']);
+
+                                $groupList = $db->getGroupList();
+
+                                if($groupList === false){
+                                    $bot->sendMessage(_("Non è stato possibile recuperare la lista dei gruppi"));
+                                }
+                                elseif(sizeof($groupList) == 0) {
+                                    if($permission['NewGroup']){
+                                        $groupKeyboard = createUserKeyboard(null, [ [ ['text' => _("Nuovo gruppo")] ], [['text' => "\u{1F3E1}"]] ]);
+                                        $bot->sendMessage(_('Gruppo eliminato'), $groupKeyboard);
+                                    }
+                                }
+                                else{
+                                    if($permission['NewGroup']){
+                                        $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => _("Nuovo gruppo")]], [['text' => "\u{1F3E1}"]] ]);
+                                    }
+                                    else{
+                                        $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => "\u{1F3E1}"]] ]);
+                                    }
+
+                                    $file['Type'] = 'viewUserInGroup';
+                                    file_put_contents(TmpFileUser_path.'selectGroup.json', json_encode($file, JSON_PRETTY_PRINT));
+
                                     $bot->sendMessage(_('Gruppo eliminato'), $groupKeyboard);
                                 }
                             }
                             else{
-                                if($permission['NewGroup']){
-                                    $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => _("Nuovo gruppo")]], [['text' => "\u{1F3E1}"]] ]);
+                                $bot->sendMessage(_("Non è stato possibile cancellare il gruppo"));
+                            }
+
+                            unlink(TmpFileUser_path.'deleteGroup.json');
+                        }
+                        elseif($otp['Type'] == 'DeleteTurnType'){
+                            if($permission['DeleteTypeOfTurn'] == false){
+                                $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                                exit;
+                            }
+
+                            $turnType = file_get_contents(TmpFileUser_path.'deleteTurnType.json');
+                            $turnType = json_decode($turnType, true);
+
+                            if($db->deleteTurnType($turnType['TurnName'])){
+                                $bot->deleteMessage($turnType['CallbackMessageID']);
+
+                                $turnTypeList = $db->getTypeOfTurnList();
+
+                                if(empty($turnTypeList)){
+                                    $bot->sendMessage(_('Non risulta registrato nessun turno'));
                                 }
                                 else{
-                                    $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => "\u{1F3E1}"]] ]);
+                                    $_turnTypeList = [];
+                                    while($row = $turnTypeList->fetch_assoc()){
+                                        $_turnTypeList[] = $row['Name'];
+                                    }
+
+                                    if($permission['NewTypeOfTurn']){
+                                        $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
+                                    }
+                                    else{
+                                        $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => "\u{1F3E1}"]]]);
+                                    }
+
+                                    $bot->sendMessage('Turno eliminato', $turnTypeKeyboard);
                                 }
-
-                                $file['Type'] = 'viewUserInGroup';
-                                file_put_contents(TmpFileUser_path.'selectGroup.json', json_encode($file, JSON_PRETTY_PRINT));
-
-                                $bot->sendMessage(_('Gruppo eliminato'), $groupKeyboard);
                             }
-                        }
-                        else{
-                            $bot->sendMessage(_("Non è stato possibile cancellare il gruppo"));
-                        }
+                            else{
+                                $bot->sendMessage(_("Non è stato possibile eliminare il turno"));
+                            }
 
-                        unlink(TmpFileUser_path.'otp.json');
-                        unlink(TmpFileUser_path.'deleteGroup.json');
+                            unlink(TmpFileUser_path.'deleteTurnType.json');
+                        }
                     }
-                    elseif($otp['Type'] == 'DeleteTypeOfTurn'){
-
+                    else{
+                        $bot->sendMessage(_('Il codice inserito non è valido'), $keyboard);
                     }
                 }
                 elseif($update["reply_to_message"]["text"] == _("Invia il file con le nuove linee guida:")){
