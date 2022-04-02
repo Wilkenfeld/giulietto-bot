@@ -2593,22 +2593,8 @@
                             else{
                                 $bot->sendMessage($_user['FullName']._(" è già in camera ").$words[1]);
                             }
-                            exit;
-                        }
-
-                        $users = $db->getUserList(false);
-                        $usersName = [];
-                        while($row = $users->fetch_assoc()){
-                            $usersName[] = $row['FullName'];
-                        }
-                        $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
-
-                        if($db->updateRoom($_chatID,$words[1]) === false){
-                            $bot->sendMessage(_("Non è stato possibile assegnare ").$user['FullName']._(" alla camera ").$words[1],$usersKeyboard);
                         }
                         else{
-
-                            $bot->sendMessage(_('Camera modificata'), $usersKeyboard);
 
                             $users = $db->getUserList(false);
                             $usersName = [];
@@ -2616,21 +2602,36 @@
                                 $usersName[] = $row['FullName'];
                             }
                             $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
+                            
+                            if($db->updateRoom($_chatID,$words[1]) == false){
+                                $bot->sendMessage(_("Non è stato possibile assegnare ").$user['FullName']._(" alla camera ").$words[1],$usersKeyboard);
+                            }
+                            else{
 
-                            sendUser($db->getUser($_chatID));
+                                $bot->sendMessage(_('Camera modificata'), $usersKeyboard);
 
-                            if($_chatID != $chatID){
-                                $bot->setChatID($_chatID);
-                                if(!is_null($words[1])){
-                                    $bot->sendMessage(_("Sei stato assegnato alla camera ").$words[1]);
+                                $users = $db->getUserList(false);
+                                $usersName = [];
+                                while($row = $users->fetch_assoc()){
+                                    $usersName[] = $row['FullName'];
+                                }
+                                $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
+
+                                sendUser($db->getUser($_chatID));
+
+                                if($_chatID != $chatID){
+                                    $bot->setChatID($_chatID);
+                                    if(!is_null($words[1])){
+                                        $bot->sendMessage(_("Sei stato assegnato alla camera ").$words[1]);
+                                    }
                                 }
                             }
+
+                            $file['Type'] = 'SelectUserForEdit';
+                            file_put_contents(TmpFileUser_path.'selectUser.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                            unlink(TmpFileUser_path.'changeRoom.json');
                         }
-
-                        $file['Type'] = 'SelectUserForEdit';
-                        file_put_contents(TmpFileUser_path.'selectUser.json', json_encode($file, JSON_PRETTY_PRINT));
-
-                        unlink(TmpFileUser_path.'changeRoom.json');
                     }
                     elseif($selectType == 'SeeUserInRoom'){
 
