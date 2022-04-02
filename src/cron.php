@@ -18,7 +18,8 @@
 
     $db->setLogFile(LOG_FILE_PATH.'cron.log');
 
-    notificaTurni($bot,$db,$log);
+    //notificaTurni($bot,$db,$log);
+    reminderAggiornamentoAssenza($bot,$db);
     rientroInquilino($bot,$db);
     arrivoOspiti($bot, $db);
    
@@ -89,6 +90,22 @@ function rientroInquilino($bot, $db){
         $user = $db->getAllUsersForNotification("IncomingRoomer");
         while($row = $user->fetch_assoc()){
             $bot->setChatID($row["ChatID"]);
+            $bot->sendMessage($msg);
+        }
+    }
+}
+
+/**
+ * @param $bot TelegramBot
+ * @param $db GiuliettoDB
+ */
+function reminderAggiornamentoAssenza($bot, $db){
+    $absence = $db->getIncomingRoomer(date('Y-m-d', strtotime('+1 day')));
+
+    if($absence->num_rows > 0){
+        $msg = _("Il tuo ritorno in struttura è previsto per domani, se prolunghi la tua assenza ricordati di aggiornare la data di rientro");
+        while($row = $absence->fetch_assoc()){
+            $bot->setChatID($row["User"]);
             $bot->sendMessage($msg);
         }
     }
