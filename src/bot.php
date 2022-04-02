@@ -205,7 +205,7 @@
                 file_put_contents($calendarFile, json_encode($calendar));
 
                 if($calendar['Type'] == 'NewAbsence'){
-                    $bot->sendCalendar($date, _("Usa le frecce per selezionare la data dell'ultimo giorno di assenza "), SELECT_DATE_INTERVALL);
+                    $bot->sendCalendar($date, _("Usa le frecce per selezionare la data in cui TORNERAI in struttura"), SELECT_DATE_INTERVALL);
                 }
                 elseif($calendar['Type'] == 'UpdateAbsence'){
                     $fileName = TmpFileUser_path."updateAbsence.json";
