@@ -169,7 +169,7 @@
                 $file = file_get_contents(TmpFileUser_path.'tmpNewTurn.json');
                 $file = json_decode($file, true);
 
-                if( $db->createNewTypeOfTurn($file['Name'], $file['Frequency'], date('Y-m-d',$date), $file['UsersByGroup'], $file['GroupFrequency']) ){
+                if( $db->createNewTurnType($file['Name'], $file['Frequency'], date('Y-m-d',$date), $file['UsersByGroup'], $file['GroupFrequency']) ){
                     $bot->sendMessage(_('Nuovo turno creato'), $keyboard);
                 }
                 else{
@@ -841,20 +841,20 @@
 
                 unlink(TMP_FILE_PATH.preg_replace('/\s+/','_',$fromUser["FullName"]));
             }
-            elseif(preg_match("/^(changeTypeOfTurnFrequency)(-)(\w+)$/",$update["data"],$words)){
-                if($permission['EditTypeOfTurn']){
+            elseif(preg_match("/^(changeTurnTypeFrequency)(-)(\w+)$/",$update["data"],$words)){
+                if($permission['EditTurnType']){
                     $bot->deleteMessage($callbackMessageID);
-                    $file['TypeOfTurn'] = $words[3];
-                    file_put_contents(TmpFileUser_path.'editTypeOfTurn.json', json_encode($file, JSON_PRETTY_PRINT));
+                    $file['TurnType'] = $words[3];
+                    file_put_contents(TmpFileUser_path.'editTurnType.json', json_encode($file, JSON_PRETTY_PRINT));
 
                     $bot->sendMessageForceReply(_('Invia la nuova frequenza del turno:'));
                 }
             }
             elseif(preg_match("/^(changeUserByGroup)(-)(\w+)$/",$update["data"],$words)){
-                if($permission['EditTypeOfTurn']){
+                if($permission['EditTurnType']){
                     $bot->deleteMessage($callbackMessageID);
-                    $file['TypeOfTurn'] = $words[3];
-                    file_put_contents(TmpFileUser_path.'editTypeOfTurn.json', json_encode($file, JSON_PRETTY_PRINT));
+                    $file['TurnType'] = $words[3];
+                    file_put_contents(TmpFileUser_path.'editTurnType.json', json_encode($file, JSON_PRETTY_PRINT));
 
                     $bot->sendMessageForceReply(_('Invia da quanti utenti deve essere composto il gruppo:'));
                 }
@@ -1089,7 +1089,7 @@
                             unlink(TmpFileUser_path.'deleteGroup.json');
                         }
                         elseif($otp['Type'] == 'DeleteTurnType'){
-                            if($permission['DeleteTypeOfTurn'] == false){
+                            if($permission['DeleteTurnType'] == false){
                                 $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                                 exit;
                             }
@@ -1100,7 +1100,7 @@
                             if($db->deleteTurnType($turnType['TurnName'])){
                                 $bot->deleteMessage($turnType['CallbackMessageID']);
 
-                                $turnTypeList = $db->getTypeOfTurnList();
+                                $turnTypeList = $db->getTurnTypeList();
 
                                 if(empty($turnTypeList)){
                                     $bot->sendMessage(_('Non risulta registrato nessun turno'));
@@ -1111,7 +1111,7 @@
                                         $_turnTypeList[] = $row['Name'];
                                     }
 
-                                    if($permission['NewTypeOfTurn']){
+                                    if($permission['NewTurnType']){
                                         $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
                                     }
                                     else{
@@ -1287,7 +1287,7 @@
                     unlink(TmpFileUser_path.'changeNameUser.json');
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia la nuova frequenza del turno:')){
-                    if($permission["EditTypeOfTurn"] == false){
+                    if($permission["EditTurnType"] == false){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1298,37 +1298,37 @@
                         exit;
                     }
 
-                    $_typeOfTurn = file_get_contents(TmpFileUser_path.'editTypeOfTurn.json');
-                    $_typeOfTurn = json_decode($_typeOfTurn, true);
-                    $_typeOfTurn = $_typeOfTurn['TypeOfTurn'];
+                    $_turnType = file_get_contents(TmpFileUser_path.'editTurnType.json');
+                    $_turnType = json_decode($_turnType, true);
+                    $_turnType = $_turnType['TurnType'];
 
-                    $typeOfTurnList = $db->getTypeOfTurnList();
-                    $_typeOfTurnList = [];
-                    while($row = $typeOfTurnList->fetch_assoc()){
-                        $_typeOfTurnList[] = $row['Name'];
+                    $turnTypeList = $db->getTurnTypeList();
+                    $_turnTypeList = [];
+                    while($row = $turnTypeList->fetch_assoc()){
+                        $_turnTypeList[] = $row['Name'];
                     }
 
-                    if($permission['NewTypeOfTurn']){
-                        $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
-                    }
-                    else{
-                        $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
-                    }
-
-                    if($db->updateTypeOfTurnFrequency($_typeOfTurn,$update['text'])){
-
-                        $bot->sendMessage(_('Frequenza cambiata'), $typeOfTurnKeyboard);
-
-                        sendMessageEditTypeOfTurn($db->getTypeOfTurn($_typeOfTurn), $permission, $messageInLineKeyboardPath);
+                    if($permission['NewTurnType']){
+                        $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
                     }
                     else{
-                        $bot->sendMessage(_("Non è stato possibile cambiare la frequenza"), $typeOfTurnKeyboard);
+                        $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => "\u{1F3E1}"]]]);
                     }
 
-                    unlink(TmpFileUser_path.'editTypeOfTurn.json');
+                    if($db->updateTurnTypeFrequency($_turnType,$update['text'])){
+
+                        $bot->sendMessage(_('Frequenza cambiata'), $turnTypeKeyboard);
+
+                        sendMessageEditTurnType($db->getTurnType($_turnType), $permission, $messageInLineKeyboardPath);
+                    }
+                    else{
+                        $bot->sendMessage(_("Non è stato possibile cambiare la frequenza"), $turnTypeKeyboard);
+                    }
+
+                    unlink(TmpFileUser_path.'editTurnType.json');
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia da quanti utenti deve essere composto il gruppo:')){
-                    if($permission["EditTypeOfTurn"] == false){
+                    if($permission["EditTurnType"] == false){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1339,37 +1339,37 @@
                         exit;
                     }
 
-                    $_typeOfTurn = file_get_contents(TmpFileUser_path.'editTypeOfTurn.json');
-                    $_typeOfTurn = json_decode($_typeOfTurn, true);
-                    $_typeOfTurn = $_typeOfTurn['TypeOfTurn'];
+                    $_turnType = file_get_contents(TmpFileUser_path.'editTurnType.json');
+                    $_turnType = json_decode($_turnType, true);
+                    $_turnType = $_turnType['TurnType'];
 
-                    $typeOfTurnList = $db->getTypeOfTurnList();
-                    $_typeOfTurnList = [];
-                    while($row = $typeOfTurnList->fetch_assoc()){
-                        $_typeOfTurnList[] = $row['Name'];
+                    $turnTypeList = $db->getTurnTypeList();
+                    $_turnTypeList = [];
+                    while($row = $turnTypeList->fetch_assoc()){
+                        $_turnTypeList[] = $row['Name'];
                     }
 
-                    if($permission['NewTypeOfTurn']){
-                        $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
-                    }
-                    else{
-                        $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
-                    }
-
-                    if($db->updateUserByGroup($_typeOfTurn,$update['text'])){
-
-                        $bot->sendMessage(_('Numero di utenti per gruppo modificato'), $typeOfTurnKeyboard);
-
-                        sendMessageEditTypeOfTurn($db->getTypeOfTurn($_typeOfTurn), $permission, $messageInLineKeyboardPath);
+                    if($permission['NewTurnType']){
+                        $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
                     }
                     else{
-                        $bot->sendMessage(_("Non è stato possibile cambiare il numero di utenti per gruppo"), $typeOfTurnKeyboard);
+                        $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => "\u{1F3E1}"]]]);
                     }
 
-                    unlink(TmpFileUser_path.'editTypeOfTurn.json');
+                    if($db->updateUserByGroup($_turnType,$update['text'])){
+
+                        $bot->sendMessage(_('Numero di utenti per gruppo modificato'), $turnTypeKeyboard);
+
+                        sendMessageEditTurnType($db->getTurnType($_turnType), $permission, $messageInLineKeyboardPath);
+                    }
+                    else{
+                        $bot->sendMessage(_("Non è stato possibile cambiare il numero di utenti per gruppo"), $turnTypeKeyboard);
+                    }
+
+                    unlink(TmpFileUser_path.'editTurnType.json');
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi il nome del nuovo turno da creare:")){
-                    if($permission["NewTypeOfTurn"] == false){
+                    if($permission["NewTurnType"] == false){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1380,7 +1380,7 @@
                     $bot->sendMessageForceReply(_("Scrivi ogni quanti giorni deve essere eseguito il turno:"));
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi ogni quanti giorni deve essere eseguito il turno:")){
-                    if($permission["NewTypeOfTurn"] == false){
+                    if($permission["NewTurnType"] == false){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1399,7 +1399,7 @@
                     $bot->sendMessageForceReply(_("Scrivi quante volte consecutivamente un gruppo deve eseguire il turno:"));
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi quante volte consecutivamente un gruppo deve eseguire il turno:")){
-                    if($permission["NewTypeOfTurn"] == false){
+                    if($permission["NewTurnType"] == false){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1418,7 +1418,7 @@
                     $bot->sendMessageForceReply(_("Scrivi da quanti utenti deve indicativamente essere composto un gruppo:"));
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi da quanti utenti deve indicativamente essere composto un gruppo:")){
-                    if($permission["NewTypeOfTurn"] == false){
+                    if($permission["NewTurnType"] == false){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1472,15 +1472,15 @@
                             $db->query('DELETE FROM Member WHERE 1;');
                             $db->query('DELETE FROM Squad WHERE 1;');
 
-                            $typeOfTurnList = $db->query('SELECT T.UsersBySquad, GROUP_CONCAT(T.Name) AS TypeOfTurns FROM TypeOfTurn T WHERE 1 GROUP BY T.UsersBySquad;');
-                            while($row = $typeOfTurnList->fetch_assoc()){
+                            $turnTypeList = $db->query('SELECT T.UsersBySquad, GROUP_CONCAT(T.Name) AS TurnType FROM TurnType T WHERE 1 GROUP BY T.UsersBySquad;');
+                            while($row = $turnTypeList->fetch_assoc()){
 
-                                $typeOfTurn = explode(',', $row['TypeOfTurns']);
+                                $turnType = explode(',', $row['TurnType']);
                                 //Ordina per ultima esecuzione probabilmente non serve
                                 /*
                                     foreach(array_keys($users) as $key){
                                     $lastExecution = 0;
-                                    foreach($typeOfTurn as $t){
+                                    foreach($turnType as $t){
                                         $lastExecution = max([$lastExecution, $db->getLastExecution($db->getUser($key)['FullName'], $t)]);
                                     }
                                     $users[$key] = $lastExecution;
@@ -1496,11 +1496,11 @@
 
                                     //Controllare se non ci sono abbastanza utenti per fare un gruppo completo
                                     if( $userInGroup == 0 and (sizeof($users) - array_search($key, array_keys($users)) ) <= ($row['UsersBySquad']*0.5) ){
-                                        if(sizeof($typeOfTurn) > 1){
-                                            $db->insertUserInGroup($key, implode($typeOfTurn).' '.$groupNum);
+                                        if(sizeof($turnType) > 1){
+                                            $db->insertUserInGroup($key, implode($turnType).' '.$groupNum);
                                         }
                                         else{
-                                            $db->insertUserInGroup($key, "$typeOfTurn[0] $groupNum");
+                                            $db->insertUserInGroup($key, "$turnType[0] $groupNum");
                                         }
 
                                         if($groupNum == $numOfGroups){
@@ -1513,21 +1513,21 @@
                                     else{
                                         if($userInGroup == 0){
 
-                                            $db->createGroup(implode($typeOfTurn).' '.$numOfGroups);
-                                            $db->insertUserInGroup($key, implode($typeOfTurn).' '.$numOfGroups);
-                                            foreach ($typeOfTurn as $t){
-                                                $typeOfTurnGroupFrequency = $db->getTypeOfTurn($t)['SquadFrequency'];
-                                                for($i = $typeOfTurnGroupFrequency-1; $i>=0; $i-- ){
-                                                    $db->addExecution($t, implode($typeOfTurn).' '.$numOfGroups, ($numOfGroups*$typeOfTurnGroupFrequency)-1-$i);
+                                            $db->createGroup(implode($turnType).' '.$numOfGroups);
+                                            $db->insertUserInGroup($key, implode($turnType).' '.$numOfGroups);
+                                            foreach ($turnType as $t){
+                                                $turnTypeGroupFrequency = $db->getTurnType($t)['SquadFrequency'];
+                                                for($i = $turnTypeGroupFrequency-1; $i>=0; $i-- ){
+                                                    $db->addExecution($t, implode($turnType).' '.$numOfGroups, ($numOfGroups*$turnTypeGroupFrequency)-1-$i);
                                                 }
                                             }
                                         }
                                         else{
-                                            if(sizeof($typeOfTurn) > 1){
-                                                $db->insertUserInGroup($key, implode($typeOfTurn).' '.$numOfGroups);
+                                            if(sizeof($turnType) > 1){
+                                                $db->insertUserInGroup($key, implode($turnType).' '.$numOfGroups);
                                             }
                                             else{
-                                                $db->insertUserInGroup($key, "$typeOfTurn[0] $numOfGroups");
+                                                $db->insertUserInGroup($key, "$turnType[0] $numOfGroups");
                                             }
                                         }
 
@@ -2095,28 +2095,28 @@
                     }
                 }
                 elseif($update["text"] == _("Turni")." \u{1F9F9}"){
-                    $typeOfTurnList = $db->getTypeOfTurnList();
+                    $turnTypeList = $db->getTurnTypeList();
 
-                    if($typeOfTurnList->num_rows === 0){
+                    if($turnTypeList->num_rows === 0){
                         $bot->sendMessage(_('Nessun turno in programma'));
                         exit;
                     }
 
-                    $_typeOfTurnList = [];
-                    while($row = $typeOfTurnList->fetch_assoc()){
+                    $_turnTypeList = [];
+                    while($row = $turnTypeList->fetch_assoc()){
                         if($row['Frequency'] == 0 or $db->getStepNumOfTurn($row['Name']) == 0){
                             continue;
                         }
 
-                        $_typeOfTurnList[] = $row['Name'];
+                        $_turnTypeList[] = $row['Name'];
                     }
 
-                    $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
+                    $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => "\u{1F3E1}"]]]);
 
-                    $bot->sendMessage(_('Seleziona un turno per visualizzarlo'), $typeOfTurnKeyboard);
+                    $bot->sendMessage(_('Seleziona un turno per visualizzarlo'), $turnTypeKeyboard);
 
                     $file['Type'] = 'Show';
-                    file_put_contents(TmpFileUser_path.'selectTypeOfTurn.json', json_encode($file, JSON_PRETTY_PRINT));
+                    file_put_contents(TmpFileUser_path.'selectTurnType.json', json_encode($file, JSON_PRETTY_PRINT));
                 }
                 elseif($update["text"] == _("Carica Linee guida")." \u{1F4D6}"){
 
@@ -2352,61 +2352,61 @@
                         exit;
                     }
 
-                    $typeOfTurnList = $db->getTypeOfTurnList();
+                    $turnTypeList = $db->getTurnTypeList();
 
-                    if(empty($typeOfTurnList)){
+                    if(empty($turnTypeList)){
                         $bot->sendMessage("Nessun turno in programma");
                         exit;
                     }
 
-                    $_typeOfTurnList = [];
-                    while($row = $typeOfTurnList->fetch_assoc()){
+                    $_turnTypeList = [];
+                    while($row = $turnTypeList->fetch_assoc()){
                         if ($db->getStepNumOfTurn($row['Name']) == 0) {
                             continue;
                         }
 
-                        $_typeOfTurnList[] = $row['Name'];
+                        $_turnTypeList[] = $row['Name'];
                     }
 
-                    $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
+                    $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => "\u{1F3E1}"]]]);
 
-                    $bot->sendMessage(_('Seleziona un turno per visualizzarne il calendario'), $typeOfTurnKeyboard);
+                    $bot->sendMessage(_('Seleziona un turno per visualizzarne il calendario'), $turnTypeKeyboard);
 
                     $file['Type'] = 'ShowCalendar';
-                    file_put_contents(TmpFileUser_path.'selectTypeOfTurn.json', json_encode($file, JSON_PRETTY_PRINT));
+                    file_put_contents(TmpFileUser_path.'selectTurnType.json', json_encode($file, JSON_PRETTY_PRINT));
                 }
                 elseif($update["text"] == _("Tipi turno")." \u{1F4CB}"){
-                    if($permission["TypeOfTurnList"] == false){
+                    if($permission["TurnTypeList"] == false){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
-                    $typeOfTurnList = $db->getTypeOfTurnList();
+                    $turnTypeList = $db->getTurnTypeList();
 
-                    if(empty($typeOfTurnList)){
+                    if(empty($turnTypeList)){
                         $bot->sendMessage(_('Non risulta registrato nessun turno'));
                         exit;
                     }
 
-                    $_typeOfTurnList = [];
-                    while($row = $typeOfTurnList->fetch_assoc()){
-                        $_typeOfTurnList[] = $row['Name'];
+                    $_turnTypeList = [];
+                    while($row = $turnTypeList->fetch_assoc()){
+                        $_turnTypeList[] = $row['Name'];
                     }
 
-                    if($permission['NewTypeOfTurn']){
-                        $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
+                    if($permission['NewTurnType']){
+                        $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
                     }
                     else{
-                        $typeOfTurnKeyboard = createUserKeyboard($_typeOfTurnList,[[['text' => "\u{1F3E1}"]]]);
+                        $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => "\u{1F3E1}"]]]);
                     }
 
-                    $bot->sendMessage(_('Seleziona un turno per visualizzarlo e modificarlo'), $typeOfTurnKeyboard);
+                    $bot->sendMessage(_('Seleziona un turno per visualizzarlo e modificarlo'), $turnTypeKeyboard);
 
                     $file['Type'] = 'Edit';
-                    file_put_contents(TmpFileUser_path.'selectTypeOfTurn.json', json_encode($file, JSON_PRETTY_PRINT));
+                    file_put_contents(TmpFileUser_path.'selectTurnType.json', json_encode($file, JSON_PRETTY_PRINT));
                 }
                 elseif($update["text"] == _('Crea nuovo turno')){
-                    if($permission["NewTypeOfTurn"] == false){
+                    if($permission["NewTurnType"] == false){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2886,18 +2886,18 @@
                     }
 
                 }
-                elseif(file_exists(TmpFileUser_path.'selectTypeOfTurn.json') and $db->getTypeOfTurn($update["text"]) != false){
+                elseif(file_exists(TmpFileUser_path.'selectTurnType.json') and $db->getTurnType($update["text"]) != false){
 
-                    $file = file_get_contents(TmpFileUser_path.'selectTypeOfTurn.json');
+                    $file = file_get_contents(TmpFileUser_path.'selectTurnType.json');
                     $file = json_decode($file, true);
 
                     if($file['Type'] == 'Show'){
-                        $typeOfTurn = $db->getTypeOfTurn($update['text']);
+                        $turnType = $db->getTurnType($update['text']);
 
-                        $frequency = $typeOfTurn["Frequency"];
-                        $lastExecution = $typeOfTurn["LastExecution"];
-                        $firstExecution = $typeOfTurn["FirstExecution"];
-                        $turnName = $typeOfTurn["Name"];
+                        $frequency = $turnType["Frequency"];
+                        $lastExecution = $turnType["LastExecution"];
+                        $firstExecution = $turnType["FirstExecution"];
+                        $turnName = $turnType["Name"];
 
                         if(is_null($lastExecution)){
                             $msg = "- - - - - -  "._("Turno")." $turnName  - - - - - - \n";
@@ -2971,15 +2971,15 @@
                         $bot->sendMessage($msg);
                     }
                     elseif($file['Type'] == 'Edit'){
-                        sendMessageEditTypeOfTurn($db->getTypeOfTurn($update["text"]), $permission, $messageInLineKeyboardPath);
+                        sendMessageEditTurnType($db->getTurnType($update["text"]), $permission, $messageInLineKeyboardPath);
                     }
                     elseif($file['Type'] == 'ShowCalendar'){
-                        $typeOfTurn = $db->getTypeOfTurn($update['text']);
+                        $turnType = $db->getTurnType($update['text']);
 
-                        $frequency = $typeOfTurn["Frequency"];
-                        $lastExecution = $typeOfTurn["LastExecution"];
-                        $firstExecution = $typeOfTurn["FirstExecution"];
-                        $turnName = $typeOfTurn["Name"];
+                        $frequency = $turnType["Frequency"];
+                        $lastExecution = $turnType["LastExecution"];
+                        $firstExecution = $turnType["FirstExecution"];
+                        $turnName = $turnType["Name"];
 
                         $msg = "- - - - - -  "._("Turno")." $turnName  - - - - - -\n";
 
@@ -3436,37 +3436,37 @@ function keyboardEditUser($permission, $user){
     return json_encode(['inline_keyboard'=> [$keyboardUserFirstRow, $keyboardUserSecondRow, $keyboardUserThirdRow] ],JSON_PRETTY_PRINT);
 }
 
-function sendMessageEditTypeOfTurn($typeOfTurn, $permission, $messageInLineKeyboardPath){
+function sendMessageEditTurnType($turnType, $permission, $messageInLineKeyboardPath){
 
     global $bot, $db;
 
-    $msg = '- - - - - -  '._("Turno").' '.$typeOfTurn['Name'].'  - - - - - -'.PHP_EOL;
-    $msg .= _('Frequenza').': '.$typeOfTurn['Frequency'].' '._('giorni').PHP_EOL;
-    $msg .= _('Prima esecuzione').': '.$typeOfTurn['FirstExecution'].PHP_EOL;
-    if(is_null($typeOfTurn['LastExecution'])){
+    $msg = '- - - - - -  '._("Turno").' '.$turnType['Name'].'  - - - - - -'.PHP_EOL;
+    $msg .= _('Frequenza').': '.$turnType['Frequency'].' '._('giorni').PHP_EOL;
+    $msg .= _('Prima esecuzione').': '.$turnType['FirstExecution'].PHP_EOL;
+    if(is_null($turnType['LastExecution'])){
         $msg .= _('Ultima esecuzione').': '._('Mai eseguito').PHP_EOL;
-        $msg .= _('Step corrente').': '._('parte da').' '.($typeOfTurn['CurrentStep']+1).'/'.$db->getStepNumOfTurn($typeOfTurn['Name']).PHP_EOL;
+        $msg .= _('Step corrente').': '._('parte da').' '.($turnType['CurrentStep']+1).'/'.$db->getStepNumOfTurn($turnType['Name']).PHP_EOL;
     }
     else{
-        $msg .= _('Ultima esecuzione').': '.$typeOfTurn['LastExecution'].PHP_EOL;
-        $msg .= _('Step corrente').': '.($typeOfTurn['CurrentStep']+1).'/'.$db->getStepNumOfTurn($typeOfTurn['Name']).PHP_EOL;
+        $msg .= _('Ultima esecuzione').': '.$turnType['LastExecution'].PHP_EOL;
+        $msg .= _('Step corrente').': '.($turnType['CurrentStep']+1).'/'.$db->getStepNumOfTurn($turnType['Name']).PHP_EOL;
     }
-    $msg .= _('Utenti per gruppo').': '.$typeOfTurn['UsersBySquad'].PHP_EOL;
-    $msg .= _('Frequenza gruppo').': '.$typeOfTurn['SquadFrequency'].PHP_EOL;
+    $msg .= _('Utenti per gruppo').': '.$turnType['UsersBySquad'].PHP_EOL;
+    $msg .= _('Frequenza gruppo').': '.$turnType['SquadFrequency'].PHP_EOL;
 
     $keyboardFirstRow = [];
     $keyboardSecondRow = [];
 
-    $keyboardFirstRow[] = ['text' => _('Utenti per gruppo')." \u{270F}", 'callback_data' => "changeUserByGroup-".$typeOfTurn['Name']];
-    $keyboardSecondRow[] =['text' => _('Frequenza')." \u{270F}", 'callback_data' => "changeTypeOfTurnFrequency-".$typeOfTurn['Name']];
-    $keyboardSecondRow[] = ['text' => _('Rinomina')." \u{270F}", 'callback_data' => "changeTypeOfTurnName-".$typeOfTurn['Name']];
-    $keyboardThirdRow[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteTurn-".$typeOfTurn['Name']];
+    $keyboardFirstRow[] = ['text' => _('Utenti per gruppo')." \u{270F}", 'callback_data' => "changeUserByGroup-".$turnType['Name']];
+    $keyboardSecondRow[] =['text' => _('Frequenza')." \u{270F}", 'callback_data' => "changeTurnTypeFrequency-".$turnType['Name']];
+    $keyboardSecondRow[] = ['text' => _('Rinomina')." \u{270F}", 'callback_data' => "changeTurnTypeName-".$turnType['Name']];
+    $keyboardThirdRow[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteTurn-".$turnType['Name']];
 
-    $typeOfTurnEditKeyboard =  json_encode(['inline_keyboard'=> [$keyboardFirstRow, $keyboardSecondRow, $keyboardThirdRow] ],JSON_PRETTY_PRINT);
+    $turnTypeEditKeyboard =  json_encode(['inline_keyboard'=> [$keyboardFirstRow, $keyboardSecondRow, $keyboardThirdRow] ],JSON_PRETTY_PRINT);
 
-    if($permission['EditTypeOfTurn']){
+    if($permission['EditTurnType']){
 
-        $msgResult = json_decode($bot->sendMessage($msg, $typeOfTurnEditKeyboard), true);
+        $msgResult = json_decode($bot->sendMessage($msg, $turnTypeEditKeyboard), true);
 
         $messageInLineKeyboard = file_get_contents($messageInLineKeyboardPath);
         $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);

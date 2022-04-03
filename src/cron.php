@@ -32,9 +32,9 @@
  */
 function notificaTurni($bot, $db, $log){
         
-    $typeOfTurn = $db->getTypeOfTurnList();
+    $turnType = $db->getTurnTypeList();
 
-    while($turn = $typeOfTurn->fetch_assoc()){
+    while($turn = $turnType->fetch_assoc()){
 
         $log->append(json_encode($turn,JSON_PRETTY_PRINT));
 

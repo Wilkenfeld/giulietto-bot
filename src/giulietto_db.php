@@ -678,7 +678,6 @@ class GiuliettoDB
         }
     }
 
-
 //Guest Table
 
     /**
@@ -1052,7 +1051,7 @@ class GiuliettoDB
      */
     public function getGroupsByUser(int $chatID){
         try{
-            $query = "SELECT M.Squad, GROUP_CONCAT(E.TypeOfTurn ORDER BY E.TypeOfTurn) AS TypeOfTurn FROM Member M  LEFT JOIN Execution E ON M.Squad = E.Squad WHERE M.User = ? GROUP BY M.Squad ORDER BY E.Squad;";
+            $query = "SELECT M.Squad, GROUP_CONCAT(E.TurnType ORDER BY E.TurnType) AS TurnType FROM Member M  LEFT JOIN Execution E ON M.Squad = E.Squad WHERE M.User = ? GROUP BY M.Squad ORDER BY E.Squad;";
             $stmt = $this->_conn->prepare($query);
             $stmt->bind_param('i',$chatID);
             $stmt->execute();
@@ -1061,7 +1060,7 @@ class GiuliettoDB
 
             $ret = [];
             while($row = $group->fetch_assoc()){
-                $ret[$row['Squad']] = $row['TypeOfTurn'];
+                $ret[$row['Squad']] = $row['TurnType'];
             }
 
             return $ret;
@@ -1164,10 +1163,10 @@ class GiuliettoDB
      * @param $groupFrequency int
      * @return bool
      */
-    public function createNewTypeOfTurn(string $name, int $frequency, string $firstExecution, int $userBySquad, int $groupFrequency): bool
+    public function createNewTurnType(string $name, int $frequency, string $firstExecution, int $userBySquad, int $groupFrequency): bool
     {
         try{
-            $query = "INSERT INTO `TypeOfTurn`(`Name`, `Frequency`, `FirstExecution`, `UsersBySquad`, `SquadFrequency`) VALUES (?,?,?,?,?)";
+            $query = "INSERT INTO `TurnType`(`Name`, `Frequency`, `FirstExecution`, `UsersBySquad`, `SquadFrequency`) VALUES (?,?,?,?,?)";
             $stmt = $this->_conn->prepare($query);
             $stmt->bind_param('sisii', $name, $frequency, $firstExecution, $userBySquad, $groupFrequency);
 
@@ -1182,9 +1181,9 @@ class GiuliettoDB
     /**
      * @return false|mysqli_result
      */
-    public function getTypeOfTurnList(){
+    public function getTurnTypeList(){
         try{
-            $query = "SELECT * FROM TypeOfTurn WHERE 1;";
+            $query = "SELECT * FROM TurnType WHERE 1;";
             $stmt = $this->_conn->prepare($query);
             $stmt->execute();
 
@@ -1202,9 +1201,9 @@ class GiuliettoDB
      * @param $turn string
      * @return array|false Return a result-set or false on failure
      */
-    public function getTypeOfTurn(string $turn){
+    public function getTurnType(string $turn){
         try{
-            $query = "SELECT * FROM TypeOfTurn T WHERE T.Name = ?;";
+            $query = "SELECT * FROM TurnType T WHERE T.Name = ?;";
             $stmt = $this->_conn->prepare($query);
             $stmt->bind_param('s',$turn);
             $stmt->execute();
@@ -1224,7 +1223,7 @@ class GiuliettoDB
     public function incStep(string $name): bool
     {
         try{
-            $query = "UPDATE TypeOfTurn SET CurrentStep = CurrentStep +1 WHERE Name = ?;";
+            $query = "UPDATE TurnType SET CurrentStep = CurrentStep +1 WHERE Name = ?;";
             $stmt = $this->_conn->prepare($query);
             $stmt->bind_param('s',$name);
 
@@ -1237,16 +1236,16 @@ class GiuliettoDB
     }
 
     /**
-     * @param $typeOfTurn string
+     * @param $turnType string
      * @param $newFrequency int
      * @return bool
      */
-    public function updateTypeOfTurnFrequency(string $typeOfTurn, int $newFrequency): bool
+    public function updateTurnTypeFrequency(string $turnType, int $newFrequency): bool
     {
         try{
-            $query = "UPDATE TypeOfTurn SET Frequency = ? WHERE Name = ?;";
+            $query = "UPDATE TurnType SET Frequency = ? WHERE Name = ?;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('is', $newFrequency, $typeOfTurn);
+            $stmt->bind_param('is', $newFrequency, $turnType);
 
             return $stmt->execute();
         }
@@ -1257,16 +1256,16 @@ class GiuliettoDB
     }
 
     /**
-     * @param $typeOfTurn string
+     * @param $turnType string
      * @param $usersByGroup int
      * @return bool
      */
-    public function updateUserByGroup(string $typeOfTurn, int $usersByGroup): bool
+    public function updateUserByGroup(string $turnType, int $usersByGroup): bool
     {
         try{
-            $query = "UPDATE TypeOfTurn SET UsersBySquad = ? WHERE Name = ?;";
+            $query = "UPDATE TurnType SET UsersBySquad = ? WHERE Name = ?;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('is', $usersByGroup, $typeOfTurn);
+            $stmt->bind_param('is', $usersByGroup, $turnType);
 
             return $stmt->execute();
         }
@@ -1279,7 +1278,7 @@ class GiuliettoDB
     public function deleteTurnType(string $name): bool
     {
         try{
-            $query = "DELETE FROM TypeOfTurn WHERE Name = ?;";
+            $query = "DELETE FROM TurnType WHERE Name = ?;";
             $stmt = $this->_conn->prepare($query);
             $stmt->bind_param('s', $name);
 
@@ -1295,17 +1294,17 @@ class GiuliettoDB
 //Execution table
 
     /**
-     * @param $typeOfTurn string
+     * @param $turnType string
      * @param $group string
      * @param $step int
      * @return bool
      */
-    public function addExecution(string $typeOfTurn, string $group, int $step): bool
+    public function addExecution(string $turnType, string $group, int $step): bool
     {
         try{
             $query = "INSERT INTO Execution VALUES(?,?,?);";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('ssi',$typeOfTurn, $group, $step);
+            $stmt->bind_param('ssi',$turnType, $group, $step);
 
             return $stmt->execute();
         }
@@ -1316,14 +1315,14 @@ class GiuliettoDB
     }
 
     /**
-     * @param $typeofTurn string
+     * @param $turnType string
      * @return false|int
      */
-    public function getStepNumOfTurn(string $typeofTurn){
+    public function getStepNumOfTurn(string $turnType){
         try{
-            $query = "SELECT COUNT(*) AS Num FROM Execution E WHERE E.TypeOfTurn = ?";
+            $query = "SELECT COUNT(*) AS Num FROM Execution E WHERE E.TurnType = ?";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('s',$typeofTurn);
+            $stmt->bind_param('s',$turnType);
             $stmt->execute();
 
             $result = $stmt->get_result();
@@ -1337,23 +1336,23 @@ class GiuliettoDB
     }
 
     /**
-     * @param $typeOfTurn string
+     * @param $turnType string
      * @param $next int
      * @return array|false|null
      */
-    public function getGroupWillDoTheNextTurn(string $typeOfTurn, int $next = 1){
+    public function getGroupWillDoTheNextTurn(string $turnType, int $next = 1){
         try{
-            $turn = $this->getTypeOfTurn($typeOfTurn);
+            $turn = $this->getTurnType($turnType);
 
             $next += $turn["CurrentStep"];
 
-            if($next > $this->getStepNumOfTurn($typeOfTurn)-1){
-                $next = $next%$this->getStepNumOfTurn($typeOfTurn);
+            if($next > $this->getStepNumOfTurn($turnType)-1){
+                $next = $next%$this->getStepNumOfTurn($turnType);
             }
 
-            $query = "SELECT * FROM Execution E WHERE E.TypeOfTurn = ? AND E.Step = ?;";
+            $query = "SELECT * FROM Execution E WHERE E.TurnType = ? AND E.Step = ?;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('si',$typeOfTurn, $next);
+            $stmt->bind_param('si',$turnType, $next);
             $stmt->execute();
 
             $result = $stmt->get_result();
@@ -1370,14 +1369,14 @@ class GiuliettoDB
 
     /**
      * @param $date string
-     * @param $typeOfTurn string
+     * @param $turnType string
      * @return array|false|null
      */
-    public function getUsersOfTurnPerformed(string $date, string $typeOfTurn){
+    public function getUsersOfTurnPerformed(string $date, string $turnType){
         try{
-            $query = "SELECT TEH.Date, TEH.TypeOfTurn, GROUP_CONCAT(TEH.User SEPARATOR ', ') AS Users FROM TurnExecutionHistory TEH WHERE TEH.Date = ? AND TEH.TypeOfTurn = ? GROUP BY TEH.Date, TEH.TypeOfTurn;";
+            $query = "SELECT TEH.Date, TEH.TurnType, GROUP_CONCAT(TEH.User SEPARATOR ', ') AS Users FROM TurnExecutionHistory TEH WHERE TEH.Date = ? AND TEH.TurnType = ? GROUP BY TEH.Date, TEH.TurnType;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('ss',$date, $typeOfTurn);
+            $stmt->bind_param('ss',$date, $turnType);
             $stmt->execute();
 
             $result = $stmt->get_result();
@@ -1391,14 +1390,14 @@ class GiuliettoDB
 
     /**
      * @param $name string
-     * @param $typeOfTurn string
+     * @param $turnType string
      * @return int|false
      */
-    public function getLastExecution(string $name, string $typeOfTurn){
+    public function getLastExecution(string $name, string $turnType){
         try{
-            $query = "SELECT UNIX_TIMESTAMP(MAX(TEH.Date)) AS LastExecution FROM TurnExecutionHistory TEH WHERE TEH.User = ? AND TEH.TypeOfTurn = ?;";
+            $query = "SELECT UNIX_TIMESTAMP(MAX(TEH.Date)) AS LastExecution FROM TurnExecutionHistory TEH WHERE TEH.User = ? AND TEH.TurnType = ?;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('ss',$name, $typeOfTurn);
+            $stmt->bind_param('ss',$name, $turnType);
             $stmt->execute();
 
             $result = $stmt->get_result();
@@ -1415,7 +1414,7 @@ class GiuliettoDB
      */
     public function getTurnHistory(){
         try{
-            $query = "SELECT TEH.Date, TEH.TypeOfTurn, GROUP_CONCAT(TEH.User) AS Users FROM TurnExecutionHistory TEH GROUP BY TEH.Date, TEH.TypeOfTurn;";
+            $query = "SELECT TEH.Date, TEH.TurnType, GROUP_CONCAT(TEH.User) AS Users FROM TurnExecutionHistory TEH GROUP BY TEH.Date, TEH.TurnType;";
             $stmt = $this->_conn->prepare($query);
             $stmt->execute();
 
