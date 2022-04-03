@@ -190,7 +190,7 @@ class GiuliettoDB
      * 
      * @return bool Return true or false on failure
      */
-    public function updateRoom(int $chatID, int $newRoom = NULL): bool
+    public function updateRoom(int $chatID, ?int $newRoom): bool
     {
         try{
             $query = "UPDATE User SET Room = ? WHERE ChatID = ?;";
