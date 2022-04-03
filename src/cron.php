@@ -30,7 +30,7 @@
  * @param $db GiuliettoDB
  * @param $log Log
  */
-function notificaTurni($bot, $db, $log){
+function notificaTurni(TelegramBot $bot, GiuliettoDB $db, Log $log){
         
     $turnType = $db->getTurnTypeList();
 
@@ -77,7 +77,7 @@ function notificaTurni($bot, $db, $log){
  * @param $bot TelegramBot
  * @param $db GiuliettoDB
  */
-function rientroInquilino($bot, $db){
+function rientroInquilino(TelegramBot $bot, GiuliettoDB $db){
     $absence = $db->getIncomingRoomer(date('Y-m-d'));
 
     if($absence->num_rows > 0){
@@ -99,7 +99,7 @@ function rientroInquilino($bot, $db){
  * @param $bot TelegramBot
  * @param $db GiuliettoDB
  */
-function reminderAggiornamentoAssenza($bot, $db){
+function reminderAggiornamentoAssenza(TelegramBot $bot, GiuliettoDB $db){
     $absence = $db->getIncomingRoomer(date('Y-m-d', strtotime('+1 day')));
 
     if($absence->num_rows > 0){
@@ -115,7 +115,7 @@ function reminderAggiornamentoAssenza($bot, $db){
  * @param $bot TelegramBot
  * @param $db GiuliettoDB
  */
-function arrivoOspiti($bot, $db){
+function arrivoOspiti(TelegramBot $bot, GiuliettoDB $db){
     $guest = $db->getIncomingGuest(date('Y-m-d'));
 
     if($guest->num_rows > 0){
