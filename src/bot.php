@@ -96,7 +96,7 @@
             "TurnList" => _("Turni")." \u{1F9F9}",
             "GetGuideLine" => _("Linee guida")." \u{1F4D6}",
             "NewGuideLine" => _("Carica Linee guida")." \u{1F4D6}",
-            "TypeOfTurnList" => _("Tipi turno")." \u{1F4CB}",
+            "TurnTypeList" => _("Tipi turno")." \u{1F4CB}",
             "SwapGroup" => _("Scambia gruppo")." \u{1F503}",
             "RearrangeGroups" => _("Riorganizza Gruppi")." \u{1F500}",
             "TurnCalendar" => _("Calendario turni")." \u{1F5D3}",
@@ -121,7 +121,7 @@
 
     $array_keyboard = createPermissionKeyboard($permission, MAIN_KEYBOARD_TEXT);
 
-    if(($permission["ExportUserList"] or $permission["ExportGuest"] or $permission["ExportAbsence"]) == true){
+    if(($permission["ExportUserList"] or $permission["ExportGuest"] or $permission["ExportAbsence"])){
         $array_keyboard[] = [['text' => _("Esporta")." \u{1F4DD}"], ['text' => _('Impostazioni')."\u{2699}"]];
     }
     else{
@@ -2376,7 +2376,7 @@
                     file_put_contents(TmpFileUser_path.'selectTurnType.json', json_encode($file, JSON_PRETTY_PRINT));
                 }
                 elseif($update["text"] == _("Tipi turno")." \u{1F4CB}"){
-                    if($permission["TurnTypeList"] == false){
+                    if(!$permission["TurnTypeList"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
