@@ -3556,7 +3556,6 @@ function getDirFiles(string $dir, string $extension = null): array
     $dirFiles = scandir($dir);
     $files = [];
     foreach ($dirFiles as $file) {
-        $fileInfo = pathinfo($file);
         if(filesize("$dir/$file") > 0){
             $fileInfo = pathinfo($file);
             if(is_null($extension)){
