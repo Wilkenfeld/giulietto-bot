@@ -140,7 +140,7 @@
     $bot->setTmpFilePath(TmpFileUser_path);
     const Guest_document = FILES_PATH . "Documenti_ospiti/";
 
-    if(is_dir(TmpFileUser_path) == false){
+    if(!is_dir(TmpFileUser_path)){
         mkdir(TmpFileUser_path, 0755, true);
     }
 
@@ -1006,7 +1006,7 @@
                     }
                 }
                 elseif(preg_match("/^(\/broadcast)(\s+)(.*)$/",$update["text"],$words)){
-                    if($permission["BroadcastMsg"] == false){
+                    if(!$permission["BroadcastMsg"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1026,7 +1026,7 @@
 
                     if ($otp['OTP'] == $update['text']) {
                         if($otp['Type'] == 'DeleteUser'){
-                            if($permission["DeleteUser"] == false){
+                            if(!$permission["DeleteUser"]){
                                 $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                                 exit;
                             }
@@ -1046,7 +1046,7 @@
                             unlink(TmpFileUser_path.'deleteUser.json');
                         }
                         elseif($otp['Type'] == 'DeleteGroup'){
-                            if($permission['DeleteGroup'] == false){
+                            if(!$permission['DeleteGroup']){
                                 $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                                 exit;
                             }
@@ -1089,7 +1089,7 @@
                             unlink(TmpFileUser_path.'deleteGroup.json');
                         }
                         elseif($otp['Type'] == 'DeleteTurnType'){
-                            if($permission['DeleteTurnType'] == false){
+                            if(!$permission['DeleteTurnType']){
                                 $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                                 exit;
                             }
@@ -1134,7 +1134,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Invia il file con le nuove linee guida:")){
 
-                    if($permission["NewGuideLine"] == false){
+                    if(!$permission["NewGuideLine"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1158,7 +1158,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Invia la tua nuova email:")){
 
-                    if($permission["ChangeEmail"] == false){
+                    if(!$permission["ChangeEmail"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1172,7 +1172,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia il numero di posti della camera:')){
 
-                    if($permission["NewRoom"] == false){
+                    if(!$permission["NewRoom"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1189,7 +1189,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi Nome e Cognome dell'ospite da registrare:")) {
 
-                    if($permission["NewGuest"] == false){
+                    if(!$permission["NewGuest"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1199,7 +1199,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi Nome e Cognome dell'ospite da eliminare:")) {
 
-                    if($permission["DeleteGuest"] == false){
+                    if(!$permission["DeleteGuest"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1219,7 +1219,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scatta una foto del fronte del documento dell'ospite ed inviala:")){
 
-                    if($permission["NewGuest"] == false){
+                    if(!$permission["NewGuest"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1230,7 +1230,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scatta una foto del retro del documento dell'ospite ed inviala:")){
 
-                    if($permission["NewGuest"] == false){
+                    if(!$permission["NewGuest"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1240,7 +1240,7 @@
                     checkNewGuestInput($text["file_id"], $chatID, $keyboard);
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia il nuovo nome:')){
-                    if($permission["ChangeNameUser"] == false){
+                    if(!$permission["ChangeNameUser"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1287,7 +1287,7 @@
                     unlink(TmpFileUser_path.'changeNameUser.json');
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia la nuova frequenza del turno:')){
-                    if($permission["EditTurnType"] == false){
+                    if(!$permission["EditTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1328,7 +1328,7 @@
                     unlink(TmpFileUser_path.'editTurnType.json');
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia da quanti utenti deve essere composto il gruppo:')){
-                    if($permission["EditTurnType"] == false){
+                    if(!$permission["EditTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1369,7 +1369,7 @@
                     unlink(TmpFileUser_path.'editTurnType.json');
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi il nome del nuovo turno da creare:")){
-                    if($permission["NewTurnType"] == false){
+                    if(!$permission["NewTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1380,7 +1380,7 @@
                     $bot->sendMessageForceReply(_("Scrivi ogni quanti giorni deve essere eseguito il turno:"));
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi ogni quanti giorni deve essere eseguito il turno:")){
-                    if($permission["NewTurnType"] == false){
+                    if(!$permission["NewTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1399,7 +1399,7 @@
                     $bot->sendMessageForceReply(_("Scrivi quante volte consecutivamente un gruppo deve eseguire il turno:"));
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi quante volte consecutivamente un gruppo deve eseguire il turno:")){
-                    if($permission["NewTurnType"] == false){
+                    if(!$permission["NewTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1418,7 +1418,7 @@
                     $bot->sendMessageForceReply(_("Scrivi da quanti utenti deve indicativamente essere composto un gruppo:"));
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi da quanti utenti deve indicativamente essere composto un gruppo:")){
-                    if($permission["NewTurnType"] == false){
+                    if(!$permission["NewTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1441,7 +1441,7 @@
                     $bot->sendCalendar(time(), _("Usa le frecce per selezionare la data in cui il turno inizierà ad essere eseguito"));
                 }
                 elseif($update["reply_to_message"]["text"] == _('Scrivi il seguente codice per confermare:')){
-                    if($permission["RearrangeGroups"] == false){
+                    if(!$permission["RearrangeGroups"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1595,7 +1595,7 @@
                     unlink(TmpFileUser_path.'otp.json');
                 }
                 elseif($update["reply_to_message"]["text"] == _("Descrivi il problema:")){
-                    if($permission["ReportsMaintenance"] == false){
+                    if(!$permission["ReportsMaintenance"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1633,7 +1633,7 @@
                     }
                 }
                 elseif($update["reply_to_message"]["text"] == _('Scrivi il nome del gruppo:')){
-                    if($permission["NewGroup"] == false){
+                    if(!$permission["NewGroup"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1680,7 +1680,7 @@
                 }
                 elseif($update["text"] == _("Lista assenti")." \u{1F4CB}"){
 
-                    if($permission["AbsenceList"] == false){
+                    if(!$permission["AbsenceList"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1692,7 +1692,7 @@
                 }
                 elseif($update["text"] == _("Lista ospiti")." \u{1F4CB}"){
 
-                    if($permission["GuestList"] == false){
+                    if(!$permission["GuestList"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1704,7 +1704,7 @@
                 }
                 elseif($update["text"] == _("Lista utenti")." \u{1F4CB}"){
 
-                    if($permission["UserList"] == false){
+                    if(!$permission["UserList"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1735,7 +1735,7 @@
                 }
                 elseif($update["text"] == _("Lista camere")." \u{1F4CB}"){
 
-                    if($permission["ChangeUserRoom"] == false){
+                    if(!$permission["ChangeUserRoom"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1764,7 +1764,7 @@
                 }
                 elseif($update["text"] == _("Aggiungi nuova camera")){
 
-                    if($permission["NewRoom"] == false){
+                    if(!$permission["NewRoom"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1826,7 +1826,7 @@
                 }
                 elseif($update["text"] == _("Modifica email")." \u{1F4E7}"){
 
-                    if($permission["ChangeEmail"] == false){
+                    if(!$permission["ChangeEmail"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1840,7 +1840,7 @@
                 }
                 elseif($update["text"] == _("Assenza")." \u{1F44B}") {
 
-                    if($permission["NewAbsence"] == false){
+                    if(!$permission["NewAbsence"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1853,7 +1853,7 @@
                 }
                 elseif($update["text"] == _("Ospite")." \u{1F6CF}") {
 
-                    if($permission["NewGuest"] == false){
+                    if(!$permission["NewGuest"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1890,7 +1890,7 @@
                 }
                 elseif($update["text"] == _("Gruppi")." \u{1F4CB}"){
 
-                    if($permission["GroupList"] == false){
+                    if(!$permission["GroupList"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1938,25 +1938,19 @@
                 }
                 elseif($update["text"] == _("Nuovo gruppo")){
 
-                    if($permission["NewGroup"] == false){
+                    if(!$permission["NewGroup"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
 
-                    if(!empty(getDirFiles(FILES_PATH.'Nomi_gruppi', 'txt'))){
-                        $newGroupKeyboard = createUserKeyboard([_('Nome casuale'), _('Manualmente')], [[['text' => "\u{1F3E1}"]]]);
-                        $bot->sendMessage(_('Come vuoi inserire il nome?'), $newGroupKeyboard);
-                    }
-                    else{
-                        $bot->sendMessageForceReply(_('Scrivi il nome del gruppo:'));
-                    }
+                    $bot->sendMessageForceReply(_('Scrivi il nome del gruppo:'));
                 }
                 elseif($update['text'] == _("Manualmente")){
                     $bot->sendMessageForceReply(_('Scrivi il nome del gruppo:'));
                 }
                 elseif($update['text'] == _("Nome casuale")){
 
-                    if($permission["NewGroup"] == false){
+                    if(!$permission["NewGroup"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1999,7 +1993,7 @@
                 }
                 elseif($update["text"] == _("Le mie assenze")." \u{1F4CB}"){
 
-                    if($permission["MyAbsenceList"] == false){
+                    if(!$permission["MyAbsenceList"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2019,7 +2013,7 @@
                             $leavingDate = strtotime($row["LeavingDate"]);
                             $returnDate = strtotime($row["ReturnDate"]);
 
-                            if($permission["DeleteAbsence"] == false and $permission['UpdateAbsence'] == false){
+                            if(!$permission["DeleteAbsence"] and !$permission['UpdateAbsence']){
                                 $msg .= _("Dal ").strftime('%d %h %Y',$leavingDate)._(" al ").strftime('%d %h %Y',$returnDate).PHP_EOL;
                                 $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
                             }
@@ -2054,14 +2048,14 @@
                             }
                         }
 
-                        if($permission["DeleteAbsence"] == false and $permission["UpdateAbsence"] == false){
+                        if(!$permission["DeleteAbsence"] and !$permission["UpdateAbsence"]){
                             $bot->sendMessage($msg);
                         }
                     }
                 }
                 elseif($update["text"] == _("I miei ospiti")." \u{1F4CB}"){
 
-                    if($permission["MyGuestList"] == false){
+                    if(!$permission["MyGuestList"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2080,7 +2074,7 @@
                             $checkInDate = strtotime($row["CheckInDate"]);
                             $leavingDate = strtotime($row["LeavingDate"]);
 
-                            if(($permission["DeleteGuest"] and $permission["UpdateGuest"]) == false){
+                            if(!($permission["DeleteGuest"] and $permission["UpdateGuest"])){
                                 $msg .= $row["Name"]._(" dal ").strftime('%e %h %Y', $checkInDate)._(" al ").strftime('%e %h %Y', $leavingDate).PHP_EOL;
                                 $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
                             }
@@ -2089,7 +2083,7 @@
                             }
                         }
 
-                        if($permission["DeleteGuest"] == false){
+                        if(!$permission["DeleteGuest"]){
                             $bot->sendMessage($msg);
                         }
                     }
@@ -2120,7 +2114,7 @@
                 }
                 elseif($update["text"] == _("Carica Linee guida")." \u{1F4D6}"){
 
-                    if($permission["NewGuideLine"] == false){
+                    if(!$permission["NewGuideLine"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2129,7 +2123,7 @@
                 }
                 elseif($update["text"] == _("Esporta")." \u{1F4DD}"){
 
-                    if(($permission["ExportUserList"] or $permission["ExportGuest"] or $permission["ExportAbsence"]) == false){
+                    if(!($permission["ExportUserList"] or $permission["ExportGuest"] or $permission["ExportAbsence"])){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2141,7 +2135,7 @@
                     $bot->sendMessage(_("Scegli cosa vuoi esportare"), $exportKeyboard);
                 }
                 elseif($update["text"] == _("Lista utenti")){
-                    if($permission["ExportUserList"] == false){
+                    if(!$permission["ExportUserList"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2212,7 +2206,7 @@
                     }
                 }
                 elseif($update["text"] == _("Ospiti")){
-                    if($permission["ExportGuest"] == false){
+                    if(!$permission["ExportGuest"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2282,7 +2276,7 @@
                     }
                 }
                 elseif($update["text"] == _("Assenze")){
-                    if($permission["ExportAbsence"] == false){
+                    if(!$permission["ExportAbsence"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2347,7 +2341,7 @@
 
                 }
                 elseif($update["text"] == _("Calendario turni")." \u{1F5D3}"){
-                    if($permission["TurnCalendar"] == false){
+                    if(!$permission["TurnCalendar"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2406,7 +2400,7 @@
                     file_put_contents(TmpFileUser_path.'selectTurnType.json', json_encode($file, JSON_PRETTY_PRINT));
                 }
                 elseif($update["text"] == _('Crea nuovo turno')){
-                    if($permission["NewTurnType"] == false){
+                    if(!$permission["NewTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2414,7 +2408,7 @@
                     $bot->sendMessageForceReply(_("Scrivi il nome del nuovo turno da creare:"));
                 }
                 elseif($update["text"] == _("Scambia gruppo")." \u{1F503}"){
-                    if($permission["SwapGroup"] == false){
+                    if(!$permission["SwapGroup"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2440,7 +2434,7 @@
                     }
                 }
                 elseif($update["text"] == _("Riorganizza Gruppi")." \u{1F500}"){
-                    if($permission["RearrangeGroups"] == false){
+                    if(!$permission["RearrangeGroups"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2456,7 +2450,7 @@
                     $bot->sendMessage($otp['OTP']);*/
                 }
                 elseif($update["text"] == _("Segnala")." \u{1F6A8}"){
-                    if($permission["ReportsMaintenance"] == false){
+                    if(!$permission["ReportsMaintenance"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2464,7 +2458,7 @@
                     $bot->sendMessageForceReply(_("Descrivi il problema:"));
                 }
                 elseif($update["text"] == _("Manutenzioni")." \u{1F6E0}"){
-                    if($permission["ManageMaintenance"] == false){
+                    if(!$permission["ManageMaintenance"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2603,7 +2597,7 @@
                             }
                             $usersKeyboard = createUserKeyboard($usersName, [[['text' => _('Visualizza utenti disabilitati')]],[['text' => "\u{1F3E1}"]]]);
 
-                            if($db->updateRoom($_chatID,$words[1]) == false){
+                            if(!$db->updateRoom($_chatID, $words[1])){
                                 $bot->sendMessage(_("Non è stato possibile assegnare ").$user['FullName']._(" alla camera ").$words[1],$usersKeyboard);
                             }
                             else{
@@ -2672,7 +2666,7 @@
                     $swapGroup = file_get_contents(TmpFileUser_path.'swapGroup.json');
                     $swapGroup = json_decode($swapGroup, true);
 
-                    if($permission["SwapGroup"] == false or !in_array($update['text'], $swapGroup['AllowedSwap'])){
+                    if(!$permission["SwapGroup"] or !in_array($update['text'], $swapGroup['AllowedSwap'])){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2829,7 +2823,7 @@
                         }
                     }
                 }
-                elseif(file_exists(TmpFileUser_path.'selectUser.json') and !empty($db->getChatID($update["text"])) and $db->getUser($db->getChatID($update["text"])) != false){
+                elseif(file_exists(TmpFileUser_path.'selectUser.json') and !empty($db->getChatID($update["text"])) and $db->getUser($db->getChatID($update["text"]))){
 
                     $selectType = file_get_contents(TmpFileUser_path.'selectUser.json');
                     $selectType = json_decode($selectType, true);
@@ -2840,7 +2834,7 @@
 
                     }
                     elseif($selectType['Type'] == 'SelectUserForSwapTurn'){
-                        if($permission["SwapGroup"] == false){
+                        if(!$permission["SwapGroup"]){
                             $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                             exit;
                         }
@@ -2886,7 +2880,7 @@
                     }
 
                 }
-                elseif(file_exists(TmpFileUser_path.'selectTurnType.json') and $db->getTurnType($update["text"]) != false){
+                elseif(file_exists(TmpFileUser_path.'selectTurnType.json') and $db->getTurnType($update["text"])){
 
                     $file = file_get_contents(TmpFileUser_path.'selectTurnType.json');
                     $file = json_decode($file, true);
@@ -3280,7 +3274,7 @@ function downloadDocument($path, $documentID, $documentName){
     $filePath = $file["result"]["file_path"];
 
     //Crea la cartella (se non esiste) per salvare i documenti dell'ospite
-    if(is_dir($path) == false){
+    if(!is_dir($path)){
         mkdir($path, 0755, true);
     }
 
@@ -3385,7 +3379,7 @@ function createPermissionKeyboard(array $permission, $KeyText = null): array
     $row = [];
     foreach($permission as $key => $value){
         $text = $KeyText[$key];
-        if($value == true and !empty($text)){
+        if($value and !empty($text)){
             $row[] = ['text'=> $text];
             $buttonNum++;
         }
