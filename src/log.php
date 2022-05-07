@@ -6,12 +6,8 @@
         /**
          * @param string $fileName log file path
          */
-        public function __construct($fileName)
+        public function __construct(string $fileName = LOG_FILE_PATH."unknown_log.log")
         {
-            if(empty($file_name)){
-                $this->_fileName = LOG_FILE_PATH."unknown_log.log";
-            }
-
             $this->_fileName = $fileName;
             if(!is_dir(dirname($fileName))){
                 mkdir(dirname($fileName).'/', 0755, true);
