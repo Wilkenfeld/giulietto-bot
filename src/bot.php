@@ -785,7 +785,7 @@
 
                         $groupList = array_diff_key($fullGroupList,$userGroupList);
 
-                        if($groupList === false){
+                        if(!$groupList){
                             $bot->sendMessage(_("Non è stato possibile recuperare la lista dei gruppi"));
                         }
                         elseif(sizeof($groupList) == 0) {
@@ -1947,49 +1947,6 @@
                 }
                 elseif($update['text'] == _("Manualmente")){
                     $bot->sendMessageForceReply(_('Scrivi il nome del gruppo:'));
-                }
-                elseif($update['text'] == _("Nome casuale")){
-
-                    if(!$permission["NewGroup"]){
-                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                        exit;
-                    }
-
-                    $filesName = getDirFiles(FILES_PATH.'Nomi_gruppi', 'txt');
-                    $groupNameskeyboard = createUserKeyboard($filesName, [[['text' => 'Tutti'],['text' => "\u{1F3E1}"]]]);
-
-                    $bot->sendMessage('Scegli quale lista usare, scegliendo \'Tutti\' ne verrà usata una casuale:', $groupNameskeyboard);
-
-                    /*if($db->createGroup(rand(10,100))){
-
-                       $groupList = $db->getGroupList();
-
-                       if($groupList === false){
-                           $bot->sendMessage(_("Non è stato possibile recuperare la lista dei gruppi"));
-                       }
-                       elseif(sizeof($groupList) == 0) {
-                           if($permission['NewGroup']){
-                               $groupKeyboard = createUserKeyboard(null, [ [ ['text' => _("Nuovo gruppo")] ], [['text' => "\u{1F3E1}"]] ]);
-                               $bot->sendMessage(_('Nuovo gruppo creato'), $groupKeyboard);
-                           }
-                       }
-                       else{
-                           if($permission['NewGroup']){
-                               $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => _("Nuovo gruppo")]], [['text' => "\u{1F3E1}"]] ]);
-                           }
-                           else{
-                               $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => "\u{1F3E1}"]] ]);
-                           }
-
-                           $file['Type'] = 'viewUserInGroup';
-                           file_put_contents(TmpFileUser_path.'selectGroup.json', json_encode($file, JSON_PRETTY_PRINT));
-
-                           $bot->sendMessage(_('Nuovo gruppo creato'), $groupKeyboard);
-                       }
-                   }
-                   else{
-                       $bot->sendMessage("Errore");
-                   }*/
                 }
                 elseif($update["text"] == _("Le mie assenze")." \u{1F4CB}"){
 
