@@ -184,7 +184,7 @@
          * @param string $document Url del documento da inviare
          */
         public function sendDocument($document, $caption = null){
-            $url = $this->url."/sendDocument?chat_id=".$this->chatID;
+            $url = $this->url."/sendDocument?chat_id=".$this->chatID."&caption=".$caption;
 
             $post_fields = array('chat_id'=> $this->chatID, 'document'=> new CURLFile( realpath($document) ) );
 
