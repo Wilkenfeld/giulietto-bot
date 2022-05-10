@@ -749,7 +749,7 @@
                     $file['ChatID'] = $words[3];
                     file_put_contents(TmpFileUser_path.'changeNameUser.json', json_encode($file, JSON_PRETTY_PRINT));
 
-                    $bot->sendMessageForceReply(_('Invia il nuovo nome:'));
+                    $bot->sendMessageForceReply(_('Scrivi il nuovo nome:'));
                 }
             }
             elseif(preg_match("/^(changeRoom)(-)(\d+)$/",$update["data"],$words)){
@@ -895,6 +895,15 @@
                     $bot->sendMessage($otp['OTP']);
                 }
             }
+            elseif(preg_match("/^(changeGroupName)(-)(-?\w+)$/",$update["data"],$words)){
+                if($permission["ManageGroups"]){
+                    $bot->deleteMessage($callbackMessageID);
+                    $file['GroupName'] = $words[3];
+                    file_put_contents(TmpFileUser_path.'changeGroupName.json', json_encode($file, JSON_PRETTY_PRINT));
+
+                    $bot->sendMessageForceReply(_('Scrivi il nuovo nome del gruppo:'));
+                }
+            }
             elseif(preg_match("/^(deleteTurn)(-)(\w+)$/",$update["data"],$words)){
                 if($permission["ManageGroups"]){
 
@@ -910,6 +919,7 @@
                     $bot->sendMessage($otp['OTP']);
                 }
             }
+
         }
         else{
             $bot->sendMessage(_("Il tuo account è stato disabilitato, non ti sarà possibile utilizzare il bot fino a quando non verrà riattivato."));
@@ -1236,7 +1246,7 @@
                     $text = end($update["photo"]);
                     checkNewGuestInput($text["file_id"], $chatID, $keyboard);
                 }
-                elseif($update["reply_to_message"]["text"] == _('Invia il nuovo nome:')){
+                elseif($update["reply_to_message"]["text"] == _('Scrivi il nuovo nome:')){
                     if(!$permission["ManageUser"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
@@ -1512,6 +1522,27 @@
                         $bot->sendMessage("Errore nella creazione del gruppo", $keyboard);
                     }
                 }
+                elseif($update["reply_to_message"]["text"] == _('Scrivi il nuovo nome del gruppo:')){
+                    if(!$permission["ManageGroups"]){
+                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
+                        exit;
+                    }
+
+                    $_group = file_get_contents(TmpFileUser_path.'changeGroupName.json');
+                    $_group = json_decode($_group, true);
+                    $_group = $_group['GroupName'];
+
+                    if($db->renameGroup($_group,$update['text'])){
+                        $bot->sendMessage(_("Nome del gruppo cambiato"));
+                    }
+                    else{
+                        $bot->sendMessage(_("Non è stato possibile cambiare il nome del gruppo"));
+                    }
+
+                    sendGroupKeyboard();
+
+                    unlink(TmpFileUser_path.'changeGroupName.json');
+                }
                 elseif($update["text"] == _("Linee guida")." \u{1F4D6}") { //invia il pdf con le linee guida
                     if(file_exists(FILES_PATH."/Linee_guida.pdf")){
 
@@ -1751,33 +1782,7 @@
                     }
                     $bot->sendMessage($msg);
 
-                    $groupList = $db->getGroupList();
-
-                    if($groupList === false){
-                        $bot->sendMessage(_("Non è stato possibile recuperare la lista dei gruppi"));
-                    }
-                    elseif(sizeof($groupList) == 0) {
-                        if($permission["ManageGroups"]){
-                            $groupKeyboard = createUserKeyboard(null, [ [ ['text' => _("Nuovo gruppo")] ], [['text' => "\u{1F3E1}"]] ]);
-                            $bot->sendMessage(_("Non esiste nessun gruppo"), $groupKeyboard);
-                        }
-                        else{
-                            $bot->sendMessage(_("Non esiste nessun gruppo"));
-                        }
-                    }
-                    else{
-                        if($permission["ManageGroups"]){
-                            $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => _("Nuovo gruppo")]], [['text' => "\u{1F3E1}"]] ]);
-                        }
-                        else{
-                            $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => "\u{1F3E1}"]] ]);
-                        }
-
-                        $file['Type'] = 'viewUserInGroup';
-                        file_put_contents(TmpFileUser_path.'selectGroup.json', json_encode($file, JSON_PRETTY_PRINT));
-
-                        $bot->sendMessage(_("Seleziona un gruppo per vederne i membri:"), $groupKeyboard);
-                    }
+                    sendGroupKeyboard();
                 }
                 elseif($update["text"] == _("Nuovo gruppo")){
 
@@ -3124,13 +3129,15 @@ function sendUserInGroup($groupName, $userInGroup, $keyboard = false)
     }
 
     if($keyboard){
-        $keyboardGroupFirstRow = [];
+        $keyboardGroupRow_1 = [];
+        $keyboardGroupRow_2 = [];
 
         if($permission["ManageGroups"]){
-            $keyboardGroupFirstRow[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteGroup-$groupName"];
+            $keyboardGroupRow_1[] = ['text' => _('Rinomina')." \u{270F}", 'callback_data' => "changeGroupName-$groupName"];
+            $keyboardGroupRow_2[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteGroup-$groupName"];
         }
 
-        $keyboard = json_encode(['inline_keyboard'=> [$keyboardGroupFirstRow] ],JSON_PRETTY_PRINT);
+        $keyboard = json_encode(['inline_keyboard'=> [$keyboardGroupRow_1,$keyboardGroupRow_2] ],JSON_PRETTY_PRINT);
 
         $msgResult = json_decode($bot->sendMessage($msg, $keyboard),true);
 
@@ -3222,15 +3229,15 @@ function sendMessageEditTurnType($turnType, $permission, $messageInLineKeyboardP
     $msg .= _('Utenti per gruppo').': '.$turnType['UsersBySquad'].PHP_EOL;
     $msg .= _('Frequenza gruppo').': '.$turnType['SquadFrequency'].PHP_EOL;
 
-    $keyboardFirstRow = [];
-    $keyboardSecondRow = [];
+    $keyboardRow_1 = [];
+    $keyboardRow_2 = [];
 
-    $keyboardFirstRow[] = ['text' => _('Utenti per gruppo')." \u{270F}", 'callback_data' => "changeUserByGroup-".$turnType['Name']];
-    $keyboardSecondRow[] =['text' => _('Frequenza')." \u{270F}", 'callback_data' => "changeTurnTypeFrequency-".$turnType['Name']];
-    $keyboardSecondRow[] = ['text' => _('Rinomina')." \u{270F}", 'callback_data' => "changeTurnTypeName-".$turnType['Name']];
+    $keyboardRow_1[] = ['text' => _('Utenti per gruppo')." \u{270F}", 'callback_data' => "changeUserByGroup-".$turnType['Name']];
+    $keyboardRow_2[] =['text' => _('Frequenza')." \u{270F}", 'callback_data' => "changeTurnTypeFrequency-".$turnType['Name']];
+    $keyboardRow_2[] = ['text' => _('Rinomina')." \u{270F}", 'callback_data' => "changeTurnTypeName-".$turnType['Name']];
     $keyboardThirdRow[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteTurn-".$turnType['Name']];
 
-    $turnTypeEditKeyboard =  json_encode(['inline_keyboard'=> [$keyboardFirstRow, $keyboardSecondRow, $keyboardThirdRow] ],JSON_PRETTY_PRINT);
+    $turnTypeEditKeyboard =  json_encode(['inline_keyboard'=> [$keyboardRow_1, $keyboardRow_2, $keyboardThirdRow] ],JSON_PRETTY_PRINT);
 
     if($permission["ManageTurnType"]){
 
@@ -3363,6 +3370,39 @@ function sendUser($user){
     $messageInLineKeyboard = json_decode($messageInLineKeyboard, true);
     $messageInLineKeyboard[$msgResult["result"]["message_id"]] = $msg;
     file_put_contents($messageInLineKeyboardPath ,json_encode($messageInLineKeyboard, JSON_PRETTY_PRINT));
+}
+
+function sendGroupKeyboard(){
+
+    global $db, $bot, $permission;
+
+    $groupList = $db->getGroupList();
+
+    if($groupList === false){
+        $bot->sendMessage(_("Non è stato possibile recuperare la lista dei gruppi"));
+    }
+    elseif(sizeof($groupList) == 0) {
+        if($permission["ManageGroups"]){
+            $groupKeyboard = createUserKeyboard(null, [ [ ['text' => _("Nuovo gruppo")] ], [['text' => "\u{1F3E1}"]] ]);
+            $bot->sendMessage(_("Non esiste nessun gruppo"), $groupKeyboard);
+        }
+        else{
+            $bot->sendMessage(_("Non esiste nessun gruppo"));
+        }
+    }
+    else{
+        if($permission["ManageGroups"]){
+            $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => _("Nuovo gruppo")]], [['text' => "\u{1F3E1}"]] ]);
+        }
+        else{
+            $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => "\u{1F3E1}"]] ]);
+        }
+
+        $file['Type'] = 'viewUserInGroup';
+        file_put_contents(TmpFileUser_path.'selectGroup.json', json_encode($file, JSON_PRETTY_PRINT));
+
+        $bot->sendMessage(_("Seleziona un gruppo per vederne i membri:"), $groupKeyboard);
+    }
 }
 
 function getDirFiles(string $dir, string $extension = null): array

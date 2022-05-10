@@ -934,6 +934,26 @@ class GiuliettoDB
     }
 
     /**
+     * @param string $groupName
+     * @param string $newGroupName
+     * @return bool
+     */
+    public function renameGroup(string $groupName, string $newGroupName): bool
+    {
+        try{
+            $query = "UPDATE Squad SET Name = ? WHERE Name = ?";
+            $stmt = $this->_conn->prepare($query);
+            $stmt->bind_param('ss',$newGroupName, $groupName);
+
+            return $stmt->execute();
+        }
+        catch (Exception $e){
+            $this->_log->append($e->getCode() . " " . $e->getMessage() . "\n" . $e->getTraceAsString(), "error");
+            return false;
+        }
+    }
+
+    /**
      * @return array|false
      */
     public function getGroupList(){
