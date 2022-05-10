@@ -82,33 +82,32 @@
     bindtextdomain('messages','../locale');
     textdomain('messages');
 
-    define("MAIN_KEYBOARD_TEXT" , array(
-            "AbsenceList" => _("Lista assenti")." \u{1F4CB}",
-            "GuestList" => _("Lista ospiti")." \u{1F4CB}",
-            "UserList" => _("Lista utenti")." \u{1F4CB}",
-            "RoomList" => _('Lista camere')." \u{1F4CB}",
-            "ChangeEmail" => _("Modifica email")." \u{1F4E7}",
-            "NewAbsence" => _("Assenza")." \u{1F44B}",
-            "NewGuest" => _("Ospite")." \u{1F6CF}",
-            "GroupList" => _("Gruppi")." \u{1F4CB}",
-            "MyGuestList" => _("I miei ospiti")." \u{1F4CB}",
-            "MyAbsenceList" => _("Le mie assenze")." \u{1F4CB}",
-            "TurnList" => _("Turni")." \u{1F9F9}",
-            "GetGuideLine" => _("Linee guida")." \u{1F4D6}",
-            "NewGuideLine" => _("Carica Linee guida")." \u{1F4D6}",
-            "TurnTypeList" => _("Tipi turno")." \u{1F4CB}",
-            "SwapGroup" => _("Scambia gruppo")." \u{1F503}",
-            "RearrangeGroups" => _("Riorganizza Gruppi")." \u{1F500}",
-            "TurnCalendar" => _("Calendario turni")." \u{1F5D3}",
-            "ReportsMaintenance" => _("Segnala")." \u{1F6A8}",
-            "ManageMaintenance" => _("Manutenzioni")." \u{1F6E0}"
+    define( "MAIN_KEYBOARD_ENTRY" ,
+        array(
+            "ShowUser"	        =>  array(_("Lista utenti")." \u{1F4CB}"),
+            "ShowAbsents"	    =>  array(_("Lista assenti")." \u{1F4CB}"),
+            "ShowGuests"        =>  array(_("Lista ospiti")." \u{1F4CB}"),
+            "ShowRooms"	        =>  array(_('Lista camere')." \u{1F4CB}"),
+            "ManageMyAbsence"	=>  array(_("Assenza")." \u{1F44B}", _("Le mie assenze")." \u{1F4CB}"),
+            "ManageMyGuest"	    =>  array(_("Ospite")." \u{1F6CF}", _("I miei ospiti")." \u{1F4CB}"),
+            "ShowGroups"	    =>  array(_("Gruppi")." \u{1F4CB}"),
+            "SwapGroup"         =>  array(_("Scambia gruppo")." \u{1F503}"),
+            "UploadGuideLine"	=>  array(_("Carica Linee guida")." \u{1F4D6}"),
+            "SetEmail"	        =>  array(_("Modifica email")." \u{1F4E7}"),
+            "ManageTurnType"	=>  array(_("Tipi turno")." \u{1F4CB}"),
+            "ReportsMaintenance"=>	array(_("Segnala")." \u{1F6A8}"),
+            "ManageMaintenance" =>  array(_("Manutenzioni")." \u{1F6E0}"),
+            "ShowTurnCalendar"  => array(_("Turni")." \u{1F9F9}", _("Calendario turni")." \u{1F5D3}"),
+            "AlwaysShows"       =>  array(_("Linee guida")." \u{1F4D6}")
         )
     );
 
-    define("EXPORT_KEYBOARD_TEXT" , array(
-            "ExportUserList" => _("Lista utenti"),
-            "ExportGuest" => _("Ospiti"),
-            "ExportAbsence" => _("Assenze"),
+
+    define("EXPORT_KEYBOARD_TEXT" ,
+        array(
+            "ExportUserList"    => array(_("Lista utenti")),
+            "ExportGuest"       => array(_("Ospiti")),
+            "ExportAbsence"     => array(_("Assenze"))
         )
     );
 
@@ -119,7 +118,7 @@
         exit();
     }
 
-    $array_keyboard = createPermissionKeyboard($permission, MAIN_KEYBOARD_TEXT);
+    $array_keyboard = createPermissionKeyboard($permission, MAIN_KEYBOARD_ENTRY);
 
     if(($permission["ExportUserList"] or $permission["ExportGuest"] or $permission["ExportAbsence"])){
         $array_keyboard[] = [['text' => _("Esporta")." \u{1F4DD}"], ['text' => _('Impostazioni')."\u{2699}"]];
@@ -444,12 +443,10 @@
 
                         $keyboardAbsence = [];
 
-                        if($permission['UpdateAbsence']){
+                        if($permission["ManageMyAbsence"]){
                             $keyboardAbsence[] = ['text' => _("Modifica")." \u{270F}", 'callback_data' => "updateAbsence-$leavingDate-$returnDate"];
-                        }
-
-                        if($permission['DeleteAbsence']){
                             $keyboardAbsence[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteAbsence-$leavingDate-$returnDate"];
+
                         }
 
                         $keyboardAbsence = json_encode(['inline_keyboard'=> [$keyboardAbsence]],JSON_PRETTY_PRINT);
@@ -622,7 +619,7 @@
                 }
             }
             elseif(preg_match("/^(deleteAbsence)(-)(\d+)(-)(\d+)$/",$update["data"],$words)){
-                if($permission['DeleteAbsence']){
+                if($permission["ManageMyAbsence"]){
                     if($db->deleteAbsence($chatID, date('Y-m-d',$words[3]), date('Y-m-d',$words[5]))){
                         $bot->deleteMessage($callbackMessageID);
 
@@ -642,7 +639,7 @@
             }
             elseif(preg_match("/^(updateAbsence)(-)(\d+)(-)(\d+)$/",$update["data"],$words)){
 
-                if($permission['UpdateAbsence']){
+                if($permission["ManageMyAbsence"]){
                     $path = TmpFileUser_path."calendar.json";
                     $type['Type'] = 'UpdateAbsence';
                     file_put_contents($path,json_encode($type));
@@ -659,7 +656,7 @@
                 }
             }
             elseif(preg_match("/^(deleteGuest)(-)(\d+)$/",$update["data"],$words)){
-                if($permission['DeleteGuest']){
+                if($permission["ManageMyGuest"]){
 
                     $guest = $db->getGuestById($words[3]);
 
@@ -682,7 +679,7 @@
             }
             elseif(preg_match("/^(updateGuest)(-)(\d+)$/",$update["data"],$words)){
 
-                if($permission['UpdateGuest']){
+                if($permission["ManageMyGuest"]){
                     $path = TmpFileUser_path."calendar.json";
                     $type['Type'] = 'UpdateGuest';
                     file_put_contents($path,json_encode($type));
@@ -711,7 +708,7 @@
                 }
             }
             elseif(preg_match("/^(deleteUser)(-)(-?\d+)$/",$update["data"],$words)){
-                if($permission['DeleteUser']){
+                if($permission["ManageUser"]){
 
                     $file['ChatID'] = $words[3];
                     $file['CallbackMessageID'] = $callbackMessageID;
@@ -727,7 +724,7 @@
                 }
             }
             elseif(preg_match("/^(enableDisableUser)(-)(-?\d+)$/",$update["data"],$words)){
-                if($permission['ChangeUserState']){
+                if($permission["ManageUser"]){
                     if($db->changeUserState($words[3])){
 
                         $userChatID = $words[3];
@@ -747,7 +744,7 @@
                 }
             }
             elseif(preg_match("/^(changeNameUser)(-)(-?\d+)$/",$update["data"],$words)){
-                if($permission['ChangeNameUser']){
+                if($permission["ManageUser"]){
                     $bot->deleteMessage($callbackMessageID);
                     $file['ChatID'] = $words[3];
                     file_put_contents(TmpFileUser_path.'changeNameUser.json', json_encode($file, JSON_PRETTY_PRINT));
@@ -756,7 +753,7 @@
                 }
             }
             elseif(preg_match("/^(changeRoom)(-)(\d+)$/",$update["data"],$words)){
-                if($permission['ChangeUserRoom']){
+                if($permission["ManageUser"]){
                     $bot->deleteMessage($callbackMessageID);
                     $file['ChatID'] = $words[3];
                     file_put_contents(TmpFileUser_path.'changeRoom.json', json_encode($file, JSON_PRETTY_PRINT));
@@ -775,7 +772,7 @@
                 }
             }
             elseif(preg_match("/^(insertUserInGroup|deleteUserFromGroup)(-)(-?\d+)$/",$update["data"],$words)){
-                if($permission['InsertUserInGroup']){
+                if($permission["ManageUser"]){
                     $bot->deleteMessage($callbackMessageID);
                     if($words[1] == 'insertUserInGroup'){
                         $file['Type'] = 'insertUser';
@@ -842,7 +839,7 @@
                 unlink(TMP_FILE_PATH.preg_replace('/\s+/','_',$fromUser["FullName"]));
             }
             elseif(preg_match("/^(changeTurnTypeFrequency)(-)(\w+)$/",$update["data"],$words)){
-                if($permission['EditTurnType']){
+                if($permission["ManageTurnType"]){
                     $bot->deleteMessage($callbackMessageID);
                     $file['TurnType'] = $words[3];
                     file_put_contents(TmpFileUser_path.'editTurnType.json', json_encode($file, JSON_PRETTY_PRINT));
@@ -851,7 +848,7 @@
                 }
             }
             elseif(preg_match("/^(changeUserByGroup)(-)(\w+)$/",$update["data"],$words)){
-                if($permission['EditTurnType']){
+                if($permission["ManageTurnType"]){
                     $bot->deleteMessage($callbackMessageID);
                     $file['TurnType'] = $words[3];
                     file_put_contents(TmpFileUser_path.'editTurnType.json', json_encode($file, JSON_PRETTY_PRINT));
@@ -860,7 +857,7 @@
                 }
             }
             elseif(preg_match("/^(AddRoomInGroup)(-)(\d+)$/",$update["data"],$words)){
-                if($permission['InsertUserInGroup']){
+                if($permission["ManageUser"]){
                     $bot->editMessageText($callbackMessageID,$update['message']['text']);
                     $file['Room'] = $words[3];
                     $file['Type'] = 'insertRoom';
@@ -872,19 +869,19 @@
                 }
             }
             elseif(preg_match("/^(deleteReport)(-)(\d+)$/",$update["data"],$words)){
-                if($permission['ManageMaintenance']){
+                if($permission["ManageMaintenance"]){
                     $bot->deleteMessage($callbackMessageID);
                     $db->deleteReport($words[3]);
                 }
             }
             elseif(preg_match("/^(resolved)(-)(\d+)$/",$update["data"],$words)){
-                if($permission['ManageMaintenance']){
+                if($permission["ManageMaintenance"]){
                     $bot->deleteMessage($callbackMessageID);
                     $db->setMaintenanceAsDone($bot->getChatID(),$words[3]);
                 }
             }
             elseif(preg_match("/^(deleteGroup)(-)(\w+)$/",$update["data"],$words)){
-                if($permission['DeleteGroup']){
+                if($permission["ManageGroups"]){
 
                     $file['GroupName'] = $words[3];
                     $file['CallbackMessageID'] = $callbackMessageID;
@@ -899,7 +896,7 @@
                 }
             }
             elseif(preg_match("/^(deleteTurn)(-)(\w+)$/",$update["data"],$words)){
-                if($permission['DeleteGroup']){
+                if($permission["ManageGroups"]){
 
                     $file['TurnName'] = $words[3];
                     $file['CallbackMessageID'] = $callbackMessageID;
@@ -1026,7 +1023,7 @@
 
                     if ($otp['OTP'] == $update['text']) {
                         if($otp['Type'] == 'DeleteUser'){
-                            if(!$permission["DeleteUser"]){
+                            if(!$permission["ManageUser"]){
                                 $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                                 exit;
                             }
@@ -1046,7 +1043,7 @@
                             unlink(TmpFileUser_path.'deleteUser.json');
                         }
                         elseif($otp['Type'] == 'DeleteGroup'){
-                            if(!$permission['DeleteGroup']){
+                            if(!$permission["ManageGroups"]){
                                 $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                                 exit;
                             }
@@ -1063,13 +1060,13 @@
                                     $bot->sendMessage(_("Non è stato possibile recuperare la lista dei gruppi"));
                                 }
                                 elseif(sizeof($groupList) == 0) {
-                                    if($permission['NewGroup']){
+                                    if($permission["ManageGroups"]){
                                         $groupKeyboard = createUserKeyboard(null, [ [ ['text' => _("Nuovo gruppo")] ], [['text' => "\u{1F3E1}"]] ]);
                                         $bot->sendMessage(_('Gruppo eliminato'), $groupKeyboard);
                                     }
                                 }
                                 else{
-                                    if($permission['NewGroup']){
+                                    if($permission["ManageGroups"]){
                                         $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => _("Nuovo gruppo")]], [['text' => "\u{1F3E1}"]] ]);
                                     }
                                     else{
@@ -1089,7 +1086,7 @@
                             unlink(TmpFileUser_path.'deleteGroup.json');
                         }
                         elseif($otp['Type'] == 'DeleteTurnType'){
-                            if(!$permission['DeleteTurnType']){
+                            if(!$permission["ManageTurnType"]){
                                 $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                                 exit;
                             }
@@ -1111,7 +1108,7 @@
                                         $_turnTypeList[] = $row['Name'];
                                     }
 
-                                    if($permission['NewTurnType']){
+                                    if($permission["ManageTurnType"]){
                                         $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
                                     }
                                     else{
@@ -1134,7 +1131,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Invia il file con le nuove linee guida:")){
 
-                    if(!$permission["NewGuideLine"]){
+                    if(!$permission["UploadGuideLine"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1158,7 +1155,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Invia la tua nuova email:")){
 
-                    if(!$permission["ChangeEmail"]){
+                    if(!$permission["SetEmail"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1172,7 +1169,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia il numero di posti della camera:')){
 
-                    if(!$permission["NewRoom"]){
+                    if(!$permission["ManageRoom"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1189,7 +1186,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi Nome e Cognome dell'ospite da registrare:")) {
 
-                    if(!$permission["NewGuest"]){
+                    if(!$permission["ManageMyGuest"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1199,7 +1196,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi Nome e Cognome dell'ospite da eliminare:")) {
 
-                    if(!$permission["DeleteGuest"]){
+                    if(!$permission["ManageMyGuest"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1219,7 +1216,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scatta una foto del fronte del documento dell'ospite ed inviala:")){
 
-                    if(!$permission["NewGuest"]){
+                    if(!$permission["ManageMyGuest"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1230,7 +1227,7 @@
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scatta una foto del retro del documento dell'ospite ed inviala:")){
 
-                    if(!$permission["NewGuest"]){
+                    if(!$permission["ManageMyGuest"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1240,7 +1237,7 @@
                     checkNewGuestInput($text["file_id"], $chatID, $keyboard);
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia il nuovo nome:')){
-                    if(!$permission["ChangeNameUser"]){
+                    if(!$permission["ManageUser"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1287,7 +1284,7 @@
                     unlink(TmpFileUser_path.'changeNameUser.json');
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia la nuova frequenza del turno:')){
-                    if(!$permission["EditTurnType"]){
+                    if(!$permission["ManageTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1308,7 +1305,7 @@
                         $_turnTypeList[] = $row['Name'];
                     }
 
-                    if($permission['NewTurnType']){
+                    if($permission["ManageTurnType"]){
                         $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
                     }
                     else{
@@ -1328,7 +1325,7 @@
                     unlink(TmpFileUser_path.'editTurnType.json');
                 }
                 elseif($update["reply_to_message"]["text"] == _('Invia da quanti utenti deve essere composto il gruppo:')){
-                    if(!$permission["EditTurnType"]){
+                    if(!$permission["ManageTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1349,7 +1346,7 @@
                         $_turnTypeList[] = $row['Name'];
                     }
 
-                    if($permission['NewTurnType']){
+                    if($permission["ManageTurnType"]){
                         $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
                     }
                     else{
@@ -1369,7 +1366,7 @@
                     unlink(TmpFileUser_path.'editTurnType.json');
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi il nome del nuovo turno da creare:")){
-                    if(!$permission["NewTurnType"]){
+                    if(!$permission["ManageTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1380,7 +1377,7 @@
                     $bot->sendMessageForceReply(_("Scrivi ogni quanti giorni deve essere eseguito il turno:"));
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi ogni quanti giorni deve essere eseguito il turno:")){
-                    if(!$permission["NewTurnType"]){
+                    if(!$permission["ManageTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1399,7 +1396,7 @@
                     $bot->sendMessageForceReply(_("Scrivi quante volte consecutivamente un gruppo deve eseguire il turno:"));
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi quante volte consecutivamente un gruppo deve eseguire il turno:")){
-                    if(!$permission["NewTurnType"]){
+                    if(!$permission["ManageTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1418,7 +1415,7 @@
                     $bot->sendMessageForceReply(_("Scrivi da quanti utenti deve indicativamente essere composto un gruppo:"));
                 }
                 elseif($update["reply_to_message"]["text"] == _("Scrivi da quanti utenti deve indicativamente essere composto un gruppo:")){
-                    if(!$permission["NewTurnType"]){
+                    if(!$permission["ManageTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1439,160 +1436,6 @@
                     file_put_contents($path,json_encode($type));
 
                     $bot->sendCalendar(time(), _("Usa le frecce per selezionare la data in cui il turno inizierà ad essere eseguito"));
-                }
-                elseif($update["reply_to_message"]["text"] == _('Scrivi il seguente codice per confermare:')){
-                    if(!$permission["RearrangeGroups"]){
-                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                        exit;
-                    }
-
-                    $otp = file_get_contents(TmpFileUser_path.'otp.json');
-                    $otp = json_decode($otp, true);
-
-                    if($otp['Type'] == 'RearrangeGroups'){
-
-                        if( $otp['OTP'] == $update['text']){
-
-                            $usersList = $db->query(' SELECT U.ChatID
-                                                        FROM User U INNER JOIN AccountType A_T ON U.AccountType = A_T.Name
-                                                        INNER JOIN Permission P ON A_T.Permission = P.Name
-                                                        LEFT JOIN ( 
-                                                            SELECT * FROM Absence A WHERE A.LeavingDate >= CURRENT_DATE()
-                                                        ) AS D ON U.ChatID = D.User 
-                                                        WHERE D.User IS NULL AND 
-                                                              U.Enabled IS TRUE AND
-                                                              P.PostedInGroup IS TRUE
-                                                        ORDER BY U.Room;');
-                            $users = [];
-                            while($row = $usersList->fetch_assoc()){
-                                $users[$row['ChatID']] = 0;
-                            }
-
-                            $db->query('DELETE FROM Execution WHERE 1;');
-                            $db->query('DELETE FROM Member WHERE 1;');
-                            $db->query('DELETE FROM Squad WHERE 1;');
-
-                            $turnTypeList = $db->query('SELECT T.UsersBySquad, GROUP_CONCAT(T.Name) AS TurnType FROM TurnType T WHERE 1 GROUP BY T.UsersBySquad;');
-                            while($row = $turnTypeList->fetch_assoc()){
-
-                                $turnType = explode(',', $row['TurnType']);
-                                //Ordina per ultima esecuzione probabilmente non serve
-                                /*
-                                    foreach(array_keys($users) as $key){
-                                    $lastExecution = 0;
-                                    foreach($turnType as $t){
-                                        $lastExecution = max([$lastExecution, $db->getLastExecution($db->getUser($key)['FullName'], $t)]);
-                                    }
-                                    $users[$key] = $lastExecution;
-                                }
-                                arsort($users);
-
-                                 */
-
-                                $userInGroup = 0;
-                                $groupNum = 1;
-                                $numOfGroups = 1;
-                                foreach (array_keys($users) as $key){
-
-                                    //Controllare se non ci sono abbastanza utenti per fare un gruppo completo
-                                    if( $userInGroup == 0 and (sizeof($users) - array_search($key, array_keys($users)) ) <= ($row['UsersBySquad']*0.5) ){
-                                        if(sizeof($turnType) > 1){
-                                            $db->insertUserInGroup($key, implode($turnType).' '.$groupNum);
-                                        }
-                                        else{
-                                            $db->insertUserInGroup($key, "$turnType[0] $groupNum");
-                                        }
-
-                                        if($groupNum == $numOfGroups){
-                                            $groupNum = 1;
-                                        }
-                                        else{
-                                            $groupNum++;
-                                        }
-                                    }
-                                    else{
-                                        if($userInGroup == 0){
-
-                                            $db->createGroup(implode($turnType).' '.$numOfGroups);
-                                            $db->insertUserInGroup($key, implode($turnType).' '.$numOfGroups);
-                                            foreach ($turnType as $t){
-                                                $turnTypeGroupFrequency = $db->getTurnType($t)['SquadFrequency'];
-                                                for($i = $turnTypeGroupFrequency-1; $i>=0; $i-- ){
-                                                    $db->addExecution($t, implode($turnType).' '.$numOfGroups, ($numOfGroups*$turnTypeGroupFrequency)-1-$i);
-                                                }
-                                            }
-                                        }
-                                        else{
-                                            if(sizeof($turnType) > 1){
-                                                $db->insertUserInGroup($key, implode($turnType).' '.$numOfGroups);
-                                            }
-                                            else{
-                                                $db->insertUserInGroup($key, "$turnType[0] $numOfGroups");
-                                            }
-                                        }
-
-                                        $userInGroup++;
-
-                                        if($userInGroup == $row['UsersBySquad']){
-                                            $userInGroup = 0;
-                                            $numOfGroups++;
-                                        }
-                                    }
-                                }
-                            }
-
-                            $bot->sendMessage("Ecco i nuovi gruppi");
-
-                            $groupList = $db->getGroupList();
-                            $rowNumber = sizeof($groupList);
-                            $i=0;
-                            foreach (array_keys($groupList) as $key){
-                                $i++;
-                                $userInGroup = $db->getUserInGroup($key);
-
-                                sendUserInGroup($key,$userInGroup);
-                            }
-
-                            $myChatID = $chatID;
-                            foreach (array_keys($users) as $key){
-                                if($key !== $myChatID){
-                                    $bot->setChatID($key);
-                                    $bot->sendMessage( _('Il calendario dei turni ed i gruppi sono stati aggiornati, ora fai parte dei seguenti gruppi:') );
-
-                                    $groups = $db->getGroupsByUser($key);
-
-                                    $msg = '';
-                                    foreach(array_keys($groups) as $group){
-                                        $userInGroup = $db->getUserInGroup($group);
-
-                                        $msg .= "- - - - - - - - - - ".$group." - - - - - - - - - - \n";
-
-                                        foreach($userInGroup as $user){
-
-                                            $msg .= $user["FullName"];
-
-                                            if(!empty($user["Username"])){
-                                                $msg .= " - @".$user["Username"].PHP_EOL;
-                                            }
-                                            else{
-                                                $msg .= PHP_EOL;
-                                            }
-                                        }
-
-                                        $msg .= PHP_EOL;
-                                    }
-
-                                    $bot->sendMessage($msg);
-                                }
-                            }
-                        }
-                        else{
-                            $bot->sendMessage(_('Il codice inserito non è valido, i gruppi non verranno riorganizzati'));
-                        }
-
-                    }
-
-                    unlink(TmpFileUser_path.'otp.json');
                 }
                 elseif($update["reply_to_message"]["text"] == _("Descrivi il problema:")){
                     if(!$permission["ReportsMaintenance"]){
@@ -1633,7 +1476,7 @@
                     }
                 }
                 elseif($update["reply_to_message"]["text"] == _('Scrivi il nome del gruppo:')){
-                    if(!$permission["NewGroup"]){
+                    if(!$permission["ManageGroups"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1646,13 +1489,13 @@
                             $bot->sendMessage(_("Non è stato possibile recuperare la lista dei gruppi"));
                         }
                         elseif(sizeof($groupList) == 0) {
-                            if($permission['NewGroup']){
+                            if($permission["ManageGroups"]){
                                 $groupKeyboard = createUserKeyboard(null, [ [ ['text' => _("Nuovo gruppo")] ], [['text' => "\u{1F3E1}"]] ]);
                                 $bot->sendMessage(_('Nuovo gruppo creato'), $groupKeyboard);
                             }
                         }
                         else{
-                            if($permission['NewGroup']){
+                            if($permission["ManageGroups"]){
                                 $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => _("Nuovo gruppo")]], [['text' => "\u{1F3E1}"]] ]);
                             }
                             else{
@@ -1680,7 +1523,7 @@
                 }
                 elseif($update["text"] == _("Lista assenti")." \u{1F4CB}"){
 
-                    if(!$permission["AbsenceList"]){
+                    if(!$permission["ShowAbsents"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1692,7 +1535,7 @@
                 }
                 elseif($update["text"] == _("Lista ospiti")." \u{1F4CB}"){
 
-                    if(!$permission["GuestList"]){
+                    if(!$permission["ShowGuests"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1704,7 +1547,7 @@
                 }
                 elseif($update["text"] == _("Lista utenti")." \u{1F4CB}"){
 
-                    if(!$permission["UserList"]){
+                    if(!$permission["ShowUser"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1723,7 +1566,7 @@
                             $usersName[] = $row['FullName'];
                         }
 
-                        if($permission['ChangeUserState'] or $permission['DeleteUser'] or $permission['ChangeNameUser'] or $permission['ChangeUserRoom']){
+                        if($permission["ManageUser"]){
                             $file['Type'] = 'SelectUserForEdit';
 
                             file_put_contents(TmpFileUser_path.'selectUser.json', json_encode($file, JSON_PRETTY_PRINT));
@@ -1735,7 +1578,7 @@
                 }
                 elseif($update["text"] == _("Lista camere")." \u{1F4CB}"){
 
-                    if(!$permission["ChangeUserRoom"]){
+                    if(!$permission["ShowRooms"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1749,7 +1592,7 @@
                         $msg .= _('Camera ').$row['Num'].': '._('Posti occupati').' '.$row['OccupiedBeds'].'/'.$row['TotalBeds'].PHP_EOL;
                     }
 
-                    if($permission["NewRoom"]){
+                    if($permission["ManageRoom"]){
                         $roomsKeyboard = createUserKeyboard($_rooms,[[['text' => _('Aggiungi nuova camera')]], [['text' => "\u{1F3E1}"]]]);
                     }
                     else{
@@ -1764,7 +1607,7 @@
                 }
                 elseif($update["text"] == _("Aggiungi nuova camera")){
 
-                    if(!$permission["NewRoom"]){
+                    if(!$permission["ManageRoom"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1826,7 +1669,7 @@
                 }
                 elseif($update["text"] == _("Modifica email")." \u{1F4E7}"){
 
-                    if(!$permission["ChangeEmail"]){
+                    if(!$permission["SetEmail"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1840,7 +1683,7 @@
                 }
                 elseif($update["text"] == _("Assenza")." \u{1F44B}") {
 
-                    if(!$permission["NewAbsence"]){
+                    if(!$permission["ManageMyAbsence"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1853,7 +1696,7 @@
                 }
                 elseif($update["text"] == _("Ospite")." \u{1F6CF}") {
 
-                    if(!$permission["NewGuest"]){
+                    if(!$permission["ManageMyGuest"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1890,7 +1733,7 @@
                 }
                 elseif($update["text"] == _("Gruppi")." \u{1F4CB}"){
 
-                    if(!$permission["GroupList"]){
+                    if(!$permission["ShowGroups"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1914,7 +1757,7 @@
                         $bot->sendMessage(_("Non è stato possibile recuperare la lista dei gruppi"));
                     }
                     elseif(sizeof($groupList) == 0) {
-                        if($permission['NewGroup']){
+                        if($permission["ManageGroups"]){
                             $groupKeyboard = createUserKeyboard(null, [ [ ['text' => _("Nuovo gruppo")] ], [['text' => "\u{1F3E1}"]] ]);
                             $bot->sendMessage(_("Non esiste nessun gruppo"), $groupKeyboard);
                         }
@@ -1923,7 +1766,7 @@
                         }
                     }
                     else{
-                        if($permission['NewGroup']){
+                        if($permission["ManageGroups"]){
                             $groupKeyboard = createUserKeyboard(array_keys($groupList),[ [['text' => _("Tutti i gruppi")]], [['text' => _("Nuovo gruppo")]], [['text' => "\u{1F3E1}"]] ]);
                         }
                         else{
@@ -1938,7 +1781,7 @@
                 }
                 elseif($update["text"] == _("Nuovo gruppo")){
 
-                    if(!$permission["NewGroup"]){
+                    if(!$permission["ManageGroups"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1950,7 +1793,7 @@
                 }
                 elseif($update["text"] == _("Le mie assenze")." \u{1F4CB}"){
 
-                    if(!$permission["MyAbsenceList"]){
+                    if(!$permission["ManageMyAbsence"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -1970,7 +1813,7 @@
                             $leavingDate = strtotime($row["LeavingDate"]);
                             $returnDate = strtotime($row["ReturnDate"]);
 
-                            if(!$permission["DeleteAbsence"] and !$permission['UpdateAbsence']){
+                            if(!$permission["ManageMyAbsence"]){
                                 $msg .= _("Dal ").strftime('%d %h %Y',$leavingDate)._(" al ").strftime('%d %h %Y',$returnDate).PHP_EOL;
                                 $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
                             }
@@ -1981,11 +1824,8 @@
 
                                 $keyboardAbsence = [];
 
-                                if($permission['UpdateAbsence']){
+                                if($permission["ManageMyAbsence"]){
                                     $keyboardAbsence[] = ['text' => _("Modifica")." \u{270F}", 'callback_data' => "updateAbsence-$leavingDate-$returnDate"];
-                                }
-
-                                if($permission['DeleteAbsence']){
                                     $keyboardAbsence[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteAbsence-$leavingDate-$returnDate"];
                                 }
 
@@ -2005,14 +1845,14 @@
                             }
                         }
 
-                        if(!$permission["DeleteAbsence"] and !$permission["UpdateAbsence"]){
+                        if(!$permission["ManageMyAbsence"]){
                             $bot->sendMessage($msg);
                         }
                     }
                 }
                 elseif($update["text"] == _("I miei ospiti")." \u{1F4CB}"){
 
-                    if(!$permission["MyGuestList"]){
+                    if(!$permission["ManageMyGuest"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2031,7 +1871,7 @@
                             $checkInDate = strtotime($row["CheckInDate"]);
                             $leavingDate = strtotime($row["LeavingDate"]);
 
-                            if(!($permission["DeleteGuest"] and $permission["UpdateGuest"])){
+                            if(!$permission["ManageMyGuest"]){
                                 $msg .= $row["Name"]._(" dal ").strftime('%e %h %Y', $checkInDate)._(" al ").strftime('%e %h %Y', $leavingDate).PHP_EOL;
                                 $msg .= "- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n";
                             }
@@ -2040,7 +1880,7 @@
                             }
                         }
 
-                        if(!$permission["DeleteGuest"]){
+                        if(!$permission["ManageMyGuest"]){
                             $bot->sendMessage($msg);
                         }
                     }
@@ -2071,7 +1911,7 @@
                 }
                 elseif($update["text"] == _("Carica Linee guida")." \u{1F4D6}"){
 
-                    if(!$permission["NewGuideLine"]){
+                    if(!$permission["UploadGuideLine"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2298,7 +2138,7 @@
 
                 }
                 elseif($update["text"] == _("Calendario turni")." \u{1F5D3}"){
-                    if(!$permission["TurnCalendar"]){
+                    if(!$permission["ShowTurnCalendar"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2327,7 +2167,7 @@
                     file_put_contents(TmpFileUser_path.'selectTurnType.json', json_encode($file, JSON_PRETTY_PRINT));
                 }
                 elseif($update["text"] == _("Tipi turno")." \u{1F4CB}"){
-                    if(!$permission["TurnTypeList"]){
+                    if(!$permission["ManageTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2344,7 +2184,7 @@
                         $_turnTypeList[] = $row['Name'];
                     }
 
-                    if($permission['NewTurnType']){
+                    if($permission["ManageTurnType"]){
                         $turnTypeKeyboard = createUserKeyboard($_turnTypeList,[[['text' => _('Crea nuovo turno')]],[['text' => "\u{1F3E1}"]]]);
                     }
                     else{
@@ -2357,7 +2197,7 @@
                     file_put_contents(TmpFileUser_path.'selectTurnType.json', json_encode($file, JSON_PRETTY_PRINT));
                 }
                 elseif($update["text"] == _('Crea nuovo turno')){
-                    if(!$permission["NewTurnType"]){
+                    if(!$permission["ManageTurnType"]){
                         $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                         exit;
                     }
@@ -2389,22 +2229,6 @@
                         $userKeyboard = createUserKeyboard($userList,[[['text' => "\u{1F3E1}"]]]);
                         $bot->sendMessage(_("Con chi vuoi fare a scambio di gruppo?"), $userKeyboard);
                     }
-                }
-                elseif($update["text"] == _("Riorganizza Gruppi")." \u{1F500}"){
-                    if(!$permission["RearrangeGroups"]){
-                        $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
-                        exit;
-                    }
-
-                    $bot->sendMessage("No");
-
-                    /*
-                    $otp['Type'] = 'RearrangeGroups';
-                    $otp['OTP'] = rand(1000,9999);
-                    file_put_contents(TmpFileUser_path.'otp.json', json_encode($otp, JSON_PRETTY_PRINT));
-
-                    $bot->sendMessageForceReply(_('Scrivi il seguente codice per confermare:'));
-                    $bot->sendMessage($otp['OTP']);*/
                 }
                 elseif($update["text"] == _("Segnala")." \u{1F6A8}"){
                     if(!$permission["ReportsMaintenance"]){
@@ -2523,7 +2347,7 @@
 
                         $changeRoom = file_get_contents(TmpFileUser_path.'changeRoom.json');
 
-                        if(!$permission["ChangeUserRoom"] or !$changeRoom){
+                        if(!$permission["ManageUser"] or !$changeRoom){
                             $bot->sendMessage(_("Mi dispiace ma non so come aiutarti")." \u{1F97A}",$keyboard);
                             exit;
                         }
@@ -2751,7 +2575,7 @@
                             $_rooms[] = $row['Num'];
                         }
 
-                        if($permission["NewRoom"]){
+                        if($permission["ManageRoom"]){
                             $roomsKeyboard = createUserKeyboard($_rooms,[[['text' => _('Aggiungi nuova camera')]], [['text' => "\u{1F3E1}"]]]);
                         }
                         else{
@@ -3302,7 +3126,7 @@ function sendUserInGroup($groupName, $userInGroup, $keyboard = false)
     if($keyboard){
         $keyboardGroupFirstRow = [];
 
-        if($permission['DeleteGroup']){
+        if($permission["ManageGroups"]){
             $keyboardGroupFirstRow[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteGroup-$groupName"];
         }
 
@@ -3328,23 +3152,26 @@ function createPermissionKeyboard(array $permission, $KeyText = null): array
 {
     $keyboard = [];
 
-    end($permission);
-    $lastElement = key($permission);
-    reset($permission);
+    end($KeyText);
+    $lastElement = key($KeyText);
+    reset($KeyText);
 
     $buttonNum = 0;
     $row = [];
-    foreach($permission as $key => $value){
-        $text = $KeyText[$key];
-        if($value and !empty($text)){
-            $row[] = ['text'=> $text];
-            $buttonNum++;
-        }
+    foreach($KeyText as $permissionName => $entryText){
 
-        if($buttonNum == 2 or $key == $lastElement){
-           $keyboard[] = $row;
-           $buttonNum = 0;
-           $row = [];
+        if($permission[$permissionName] or $permissionName == "AlwaysShows"){
+
+            foreach ($entryText as $text){
+                $row[] = ['text'=> $text];
+                $buttonNum++;
+
+                if($buttonNum == 2 or $permissionName == $lastElement){
+                    $keyboard[] = $row;
+                    $buttonNum = 0;
+                    $row = [];
+                }
+            }
         }
     }
     return $keyboard;
@@ -3358,29 +3185,19 @@ function keyboardEditUser($permission, $user){
 
     $chatID = $user['ChatID'];
 
-    if($permission['ChangeNameUser']){
+    if($permission["ManageUser"]){
         $keyboardUserFirstRow[] = ['text' => _('Cambia nome')." \u{270F}", 'callback_data' => "changeNameUser-$chatID"];
-    }
-
-    if($permission['ChangeUserRoom']){
         $keyboardUserFirstRow[] = ['text' => _('Cambia camera')." \u{270F}", 'callback_data' => "changeRoom-$chatID"];
-    }
-
-    if($permission['InsertUserInGroup']){
         $keyboardUserSecondRow[] = ['text' => _('Inserisci in gruppo'), 'callback_data' => "insertUserInGroup-$chatID"];
         $keyboardUserSecondRow[] = ['text' => _('Rimuovi da gruppo'), 'callback_data' => "deleteUserFromGroup-$chatID"];
-    }
 
-    if($permission['ChangeUserState']){
         if($user["Enabled"]){
             $keyboardUserThirdRow[] = ['text' => _('Disabilita'), 'callback_data' => "enableDisableUser-$chatID"];
         }
         else{
             $keyboardUserThirdRow[] = ['text' => _('Abilita'), 'callback_data' => "enableDisableUser-$chatID"];
         }
-    }
 
-    if($permission['DeleteUser']){
         $keyboardUserThirdRow[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteUser-$chatID"];
     }
 
@@ -3415,7 +3232,7 @@ function sendMessageEditTurnType($turnType, $permission, $messageInLineKeyboardP
 
     $turnTypeEditKeyboard =  json_encode(['inline_keyboard'=> [$keyboardFirstRow, $keyboardSecondRow, $keyboardThirdRow] ],JSON_PRETTY_PRINT);
 
-    if($permission['EditTurnType']){
+    if($permission["ManageTurnType"]){
 
         $msgResult = json_decode($bot->sendMessage($msg, $turnTypeEditKeyboard), true);
 
@@ -3441,11 +3258,8 @@ function sendMessageEditGuest($guest, $permission, $messageInLineKeyboardPath){
 
     $guestId = $guest['ID'];
 
-    if($permission['UpdateGuest']){
+    if($permission["ManageGuest"]){
         $keyboardGuest[] = ['text' => _("Modifica")." \u{270F}", 'callback_data' => "updateGuest-$guestId"];
-    }
-
-    if($permission['DeleteGuest']){
         $keyboardGuest[] = ['text' => _('Elimina')." \u{274C}", 'callback_data' => "deleteGuest-$guestId"];
     }
 
