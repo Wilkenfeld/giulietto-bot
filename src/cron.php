@@ -67,7 +67,7 @@ function notificaTurni(TelegramBot $bot, GiuliettoDB $db, Log $log){
             }
 
             if(!is_null($turn['LastExecution']) and $turn["FirstExecution"] != date('Y-m-d')){
-                $db->incStep($turn['Name']);
+                $db->incStep($turn['ID']);
             }
         }
     }
