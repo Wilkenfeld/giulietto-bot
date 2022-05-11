@@ -184,10 +184,10 @@ class GiuliettoDB
 
     /**
      * Update the room of the user
-     * 
+     *
      * @param int $chatID The identifier of chat, if the user is a private account is equal to user id
-     * @param int $newRoom The new room of the user
-     * 
+     * @param int|null $newRoom The new room of the user
+     *
      * @return bool Return true or false on failure
      */
     public function updateRoom(int $chatID, ?int $newRoom): bool
@@ -1173,7 +1173,7 @@ class GiuliettoDB
     }
 
 
-//Type of turn table
+//TTurn type table
 
     /**
      * @param $name string
@@ -1218,14 +1218,14 @@ class GiuliettoDB
     /**
      * Get all the info for all the type of turn
      *
-     * @param $turn string
+     * @param int $turnTypeID
      * @return array|false Return a result-set or false on failure
      */
-    public function getTurnType(string $turn){
+    public function getTurnTypeByID(int $turnTypeID){
         try{
-            $query = "SELECT * FROM TurnType T WHERE T.Name = ?;";
+            $query = "SELECT * FROM TurnType T WHERE T.ID = ?;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('s',$turn);
+            $stmt->bind_param('i',$turnTypeID);
             $stmt->execute();
 
             return $stmt->get_result()->fetch_assoc();
@@ -1237,15 +1237,36 @@ class GiuliettoDB
     }
 
     /**
-     * @param $name string
+     * Get all the info for all the type of turn
+     *
+     * @param string $turnTypeName
+     * @return array|false Return a result-set or false on failure
+     */
+    public function getTurnTypeByName(string $turnTypeName){
+        try{
+            $query = "SELECT * FROM TurnType T WHERE T.Name = ?;";
+            $stmt = $this->_conn->prepare($query);
+            $stmt->bind_param('s',$turnTypeName);
+            $stmt->execute();
+
+            return $stmt->get_result()->fetch_assoc();
+        }
+        catch (Exception $e){
+            $this->_log->append($e->getCode() . " " . $e->getMessage() . "\n" . $e->getTraceAsString(), "error");
+            return false;
+        }
+    }
+
+    /**
+     * @param string $turnTypeID int
      * @return bool
      */
-    public function incStep(string $name): bool
+    public function incStep(string $turnTypeID): bool
     {
         try{
-            $query = "UPDATE TurnType SET CurrentStep = CurrentStep +1 WHERE Name = ?;";
+            $query = "UPDATE TurnType SET CurrentStep = CurrentStep +1 WHERE ID = ?;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('s',$name);
+            $stmt->bind_param('i',$turnTypeID);
 
             return $stmt->execute();
         }
@@ -1256,16 +1277,16 @@ class GiuliettoDB
     }
 
     /**
-     * @param $turnType string
+     * @param $turnTypeID int
      * @param $newFrequency int
      * @return bool
      */
-    public function updateTurnTypeFrequency(string $turnType, int $newFrequency): bool
+    public function updateTurnTypeFrequency(int $turnTypeID, int $newFrequency): bool
     {
         try{
-            $query = "UPDATE TurnType SET Frequency = ? WHERE Name = ?;";
+            $query = "UPDATE TurnType SET Frequency = ? WHERE ID = ?;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('is', $newFrequency, $turnType);
+            $stmt->bind_param('ii', $newFrequency, $turnTypeID);
 
             return $stmt->execute();
         }
@@ -1276,16 +1297,16 @@ class GiuliettoDB
     }
 
     /**
-     * @param $turnType string
-     * @param $usersByGroup int
+     * @param $turnTypeID int
+     * @param $newTurnTypeName string
      * @return bool
      */
-    public function updateUserByGroup(string $turnType, int $usersByGroup): bool
+    public function renameTurnType(int $turnTypeID, string $newTurnTypeName): bool
     {
         try{
-            $query = "UPDATE TurnType SET UsersBySquad = ? WHERE Name = ?;";
+            $query = "UPDATE TurnType SET Name = ? WHERE ID = ?;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('is', $usersByGroup, $turnType);
+            $stmt->bind_param('si', $newTurnTypeName, $turnTypeID);
 
             return $stmt->execute();
         }
@@ -1295,12 +1316,36 @@ class GiuliettoDB
         }
     }
 
-    public function deleteTurnType(string $name): bool
+    /**
+     * @param $turnTypeID int
+     * @param $usersByGroup int
+     * @return bool
+     */
+    public function updateUserByGroup(int $turnTypeID, int $usersByGroup): bool
     {
         try{
-            $query = "DELETE FROM TurnType WHERE Name = ?;";
+            $query = "UPDATE TurnType SET UsersBySquad = ? WHERE ID = ?;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('s', $name);
+            $stmt->bind_param('ii', $usersByGroup, $turnTypeID);
+
+            return $stmt->execute();
+        }
+        catch(Exception $e){
+            $this->_log->append($e->getCode()." ".$e->getMessage()."\n".$e->getTraceAsString(),"error");
+            return false;
+        }
+    }
+
+    /**
+     * @param int $turnTypeID
+     * @return bool
+     */
+    public function deleteTurnType(int $turnTypeID): bool
+    {
+        try{
+            $query = "DELETE FROM TurnType WHERE ID = ?;";
+            $stmt = $this->_conn->prepare($query);
+            $stmt->bind_param('i', $turnTypeID);
 
             return $stmt->execute();
         }
@@ -1356,18 +1401,18 @@ class GiuliettoDB
     }
 
     /**
-     * @param $turnType string
+     * @param $turnTypeID int
      * @param $next int
      * @return array|false|null
      */
-    public function getGroupWillDoTheNextTurn(string $turnType, int $next = 1){
+    public function getGroupWillDoTheNextTurn(int $turnTypeID, int $next = 1){
         try{
-            $turn = $this->getTurnType($turnType);
+            $turn = $this->getTurnTypeByID($turnTypeID);
 
             $next += $turn["CurrentStep"];
 
-            if($next > $this->getStepNumOfTurn($turnType)-1){
-                $next = $next%$this->getStepNumOfTurn($turnType);
+            if($next > $this->getStepNumOfTurn($turnTypeID)-1){
+                $next = $next%$this->getStepNumOfTurn($turnTypeID);
             }
 
             $query = "SELECT * FROM Execution E WHERE E.TurnType = ? AND E.Step = ?;";
