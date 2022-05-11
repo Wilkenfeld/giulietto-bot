@@ -934,16 +934,56 @@ class GiuliettoDB
     }
 
     /**
+     * @param int $groupID
+     * @return bool|array|null
+     */
+    public function getGroupByID(int $groupID)
+    {
+        try{
+            $query = "SELECT * FROM Squad WHERE ID = ?;;";
+            $stmt = $this->_conn->prepare($query);
+            $stmt->bind_param('i',$groupID);
+            $stmt->execute();
+
+            return $stmt->get_result()->fetch_assoc();
+        }
+        catch (Exception $e){
+            $this->_log->append($e->getCode() . " " . $e->getMessage() . "\n" . $e->getTraceAsString(), "error");
+            return false;
+        }
+    }
+
+    /**
      * @param string $groupName
+     * @return bool|array|null
+     */
+    public function getGroupByName(string $groupName)
+    {
+        try{
+            $query = "SELECT * FROM Squad WHERE Name = ?;";
+            $stmt = $this->_conn->prepare($query);
+            $stmt->bind_param('s',$groupName);
+            $stmt->execute();
+
+            return $stmt->get_result()->fetch_assoc();
+        }
+        catch (Exception $e){
+            $this->_log->append($e->getCode() . " " . $e->getMessage() . "\n" . $e->getTraceAsString(), "error");
+            return false;
+        }
+    }
+
+    /**
+     * @param int $groupID
      * @param string $newGroupName
      * @return bool
      */
-    public function renameGroup(string $groupName, string $newGroupName): bool
+    public function renameGroup(int $groupID, string $newGroupName): bool
     {
         try{
-            $query = "UPDATE Squad SET Name = ? WHERE Name = ?";
+            $query = "UPDATE Squad SET Name = ? WHERE ID = ?";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('ss',$newGroupName, $groupName);
+            $stmt->bind_param('si',$newGroupName, $groupID);
 
             return $stmt->execute();
         }
@@ -965,7 +1005,7 @@ class GiuliettoDB
             $gruppi = $stmt->get_result();
             $ret = [];
             while($row = $gruppi->fetch_assoc()){
-               $ret[$row["Name"]] = $row["LastExecution"];
+               $ret[$row["ID"]] = $row["Name"];
             }
 
             return $ret;
@@ -978,15 +1018,15 @@ class GiuliettoDB
 
     /**
      * @param $chatID int
-     * @param $groupName string
+     * @param $groupID int
      * @return bool
      */
-    public function insertUserInGroup(int $chatID, string $groupName): bool
+    public function insertUserInGroup(int $chatID, int $groupID): bool
     {
         try{
             $query = "INSERT INTO Member(User,Squad) VALUES(?,?);";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('is', $chatID, $groupName);
+            $stmt->bind_param('ii', $chatID, $groupID);
 
             return $stmt->execute();
         }
@@ -998,15 +1038,15 @@ class GiuliettoDB
 
     /**
      * @param $chatID int
-     * @param $groupName string
+     * @param $groupID int
      * @return bool
      */
-    public function removeUserFromGroup(int $chatID, string $groupName): bool
+    public function removeUserFromGroup(int $chatID, int $groupID): bool
     {
         try{
             $query = "DELETE FROM Member WHERE User = ? AND Squad = ?;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('is', $chatID, $groupName);
+            $stmt->bind_param('ii', $chatID, $groupID);
 
             return $stmt->execute();
         }
@@ -1017,15 +1057,15 @@ class GiuliettoDB
     }
 
     /**
-     * @param $name string
+     * @param int $groupID
      * @return bool
      */
-    public function deleteGroup(string $name): bool
+    public function deleteGroup(int $groupID): bool
     {
         try{
-            $query = "DELETE FROM Squad WHERE Name = ?;";
+            $query = "DELETE FROM Squad WHERE ID = ?;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('s', $name);
+            $stmt->bind_param('i', $groupID);
 
             return $stmt->execute();
         }
@@ -1039,14 +1079,14 @@ class GiuliettoDB
 //Member Table
 
     /**
-     * @param $groupName string
+     * @param int $groupID
      * @return array|false
      */
-    public function getUserInGroup(string $groupName){
+    public function getUserInGroup(int $groupID){
         try{
             $query = "SELECT U.* FROM Member M INNER JOIN User U ON M.User = U.ChatID WHERE M.Squad = ? AND U.Enabled IS TRUE;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('s',$groupName);
+            $stmt->bind_param('i',$groupID);
             $stmt->execute();
 
             $user =  $stmt->get_result();
@@ -1146,11 +1186,11 @@ class GiuliettoDB
     /**
      * @param $firstUser int
      * @param $secondUser int
-     * @param $firstGroup string
-     * @param $secondGroup string
+     * @param $firstGroup int
+     * @param $secondGroup int
      * @return bool
      */
-    public function swapGroup(int $firstUser, int $secondUser, string $firstGroup, string $secondGroup): bool
+    public function swapGroup(int $firstUser, int $secondUser, int $firstGroupID, int $secondGroupID): bool
     {
         try{
 
@@ -1158,10 +1198,10 @@ class GiuliettoDB
 
             $query = "UPDATE Member SET Squad = ? WHERE User = ? AND Squad = ?;";
             $stmt = $this->_conn->prepare($query);
-            $stmt->bind_param('sis',$secondGroup, $firstUser, $firstGroup);
+            $stmt->bind_param('sis',$secondGroupID, $firstUser, $firstGroupID);
             $stmt->execute();
 
-            $stmt->bind_param('sis', $firstGroup, $secondUser, $secondGroup);
+            $stmt->bind_param('sis', $firstGroupID, $secondUser, $secondGroupID);
             $stmt->execute();
 
             return  $this->_conn->commit();
