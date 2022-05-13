@@ -1,12 +1,12 @@
 <?php
 
-    require_once 'telegram_bot.php';
-    require_once 'giulietto_db.php';
-    require_once 'log.php';
+    require_once 'TelegramBotAPI.php';
+    require_once 'GiuliettoDB.php';
+    require_once 'Log.php';
     require_once 'config/config.php';
     require_once 'email.php';
 
-    $bot = new TelegramBot(TOKEN);
+    $bot = new TelegramBotAPI(TOKEN);
     $db = null;
 
     $log = new Log(LOG_FILE_PATH."/bot.log");

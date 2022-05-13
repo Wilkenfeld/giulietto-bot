@@ -1,6 +1,6 @@
 <?php
 
-require_once 'log.php';
+require_once 'Log.php';
 
 /**
  * GiuliettoBot database interface class

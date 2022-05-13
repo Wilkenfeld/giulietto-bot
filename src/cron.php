@@ -1,9 +1,9 @@
 <?php
-    require_once 'giulietto_db.php';
-    require_once 'telegram_bot.php';
+    require_once 'GiuliettoDB.php';
+    require_once 'TelegramBotAPI.php';
     include_once 'config/config.php';
 
-    $bot = new TelegramBot(TOKEN);
+    $bot = new TelegramBotAPI(TOKEN);
     $log = new Log(LOG_FILE_PATH."cron.log");
 
     // Creazione della connessione al Database
@@ -26,11 +26,11 @@
     $conn->close();
 
 /**
- * @param $bot TelegramBot
+ * @param $bot TelegramBotAPI
  * @param $db GiuliettoDB
  * @param $log Log
  */
-function notificaTurni(TelegramBot $bot, GiuliettoDB $db, Log $log){
+function notificaTurni(TelegramBotAPI $bot, GiuliettoDB $db, Log $log){
         
     $turnType = $db->getTurnTypeList();
 
@@ -74,10 +74,10 @@ function notificaTurni(TelegramBot $bot, GiuliettoDB $db, Log $log){
 }
 
 /**
- * @param $bot TelegramBot
+ * @param $bot TelegramBotAPI
  * @param $db GiuliettoDB
  */
-function rientroInquilino(TelegramBot $bot, GiuliettoDB $db){
+function rientroInquilino(TelegramBotAPI $bot, GiuliettoDB $db){
     $absence = $db->getIncomingRoomer(date('Y-m-d'));
 
     if($absence->num_rows > 0){
@@ -96,10 +96,10 @@ function rientroInquilino(TelegramBot $bot, GiuliettoDB $db){
 }
 
 /**
- * @param $bot TelegramBot
+ * @param $bot TelegramBotAPI
  * @param $db GiuliettoDB
  */
-function reminderAggiornamentoAssenza(TelegramBot $bot, GiuliettoDB $db){
+function reminderAggiornamentoAssenza(TelegramBotAPI $bot, GiuliettoDB $db){
     $absence = $db->getIncomingRoomer(date('Y-m-d', strtotime('+1 day')));
 
     if($absence->num_rows > 0){
@@ -112,10 +112,10 @@ function reminderAggiornamentoAssenza(TelegramBot $bot, GiuliettoDB $db){
 }
 
 /**
- * @param $bot TelegramBot
+ * @param $bot TelegramBotAPI
  * @param $db GiuliettoDB
  */
-function arrivoOspiti(TelegramBot $bot, GiuliettoDB $db){
+function arrivoOspiti(TelegramBotAPI $bot, GiuliettoDB $db){
     $guest = $db->getIncomingGuest(date('Y-m-d'));
 
     if($guest->num_rows > 0){

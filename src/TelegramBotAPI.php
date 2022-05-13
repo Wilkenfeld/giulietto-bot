@@ -21,7 +21,7 @@
 
     const STATUS_FILE = "calendar_status.json";
 
-    class TelegramBot{
+    class TelegramBotAPI{
 
         private $token;
         private $url;
