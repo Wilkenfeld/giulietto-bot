@@ -1,8 +1,8 @@
-# Giulietto - Telegram Bot for Student Housing Management
+# Giulietto Bot
 
 ## Introduzione
 
-Giulietto è un bot Telegram scritto in PHP per la gestione di uno studentato. Offre diverse funzionalità per semplificare la gestione della struttura, tra cui:
+Giulietto è un bot Telegram scritto in PHP per la gestione di uno studentato. Offre diverse funzionalità per semplificare la gestione della struttura.
 
 ## Funzionalità
 - Gestione delle assenze e delle presenze degli studenti
