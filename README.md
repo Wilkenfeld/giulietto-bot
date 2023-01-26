@@ -17,3 +17,6 @@ Non sono state utilizzate librerie PHP per l'interazione con le API di Telegram,
 
 ## Note finali
 Il progetto è incompleto e non è più in fase di sviluppo.
+
+## Licenza
+Questo progetto è rilasciato sotto la licenza GNU General Public License v3.0.
