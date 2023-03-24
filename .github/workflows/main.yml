@@ -12,7 +12,7 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     steps:
-      - uses: "actions/checkout@v4"
+      - uses: "actions/checkout@v3"
       - name: Deploy files to server
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
