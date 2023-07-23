@@ -3,3 +3,6 @@ docs/
 
 # Config files
 src/config/
+
+# Composer files
+vendor

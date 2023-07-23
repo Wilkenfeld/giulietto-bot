@@ -1,0 +1,8 @@
+{
+    "name": "giulietto/giuliettobot",
+    "type": "project",
+    "require": {
+        "php": ">=7.3",
+        "longman/telegram-bot": "*"
+    }
+}
