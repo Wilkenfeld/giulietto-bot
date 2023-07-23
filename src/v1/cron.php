@@ -3,7 +3,7 @@
     require_once 'TelegramBotAPI.php';
     include_once 'config/config.php';
 
-    $bot = new TelegramBotAPI(TOKEN);
+    $bot = new TelegramBotAPI(config['prod']['token']);
     $log = new Log(LOG_FILE_PATH."cron.log");
 
     // Creazione della connessione al Database

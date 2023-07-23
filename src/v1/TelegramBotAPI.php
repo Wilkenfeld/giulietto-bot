@@ -8,7 +8,7 @@
  * @version 2.0
  */
 
-    require_once 'config/config.php';
+    require_once '../config/config.php';
 
     const MESSAGE = 100;
     const EDITED_MESSAGE = 101;

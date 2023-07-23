@@ -3,10 +3,10 @@
     require_once 'TelegramBotAPI.php';
     require_once 'GiuliettoDB.php';
     require_once 'Log.php';
-    require_once 'config/config.php';
+    require_once '../config/config.php';
     require_once 'email.php';
 
-    $bot = new TelegramBotAPI(TOKEN);
+    $bot = new TelegramBotAPI();
     $db = null;
 
     $log = new Log(LOG_FILE_PATH."/bot.log");
@@ -15,6 +15,7 @@
     $update = $bot->getUpdate();
     $updateType = $bot->getUpdateType();
 
+    $$token = $config["prod"]["$token"];
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
     // Creazione della connessione al Database
@@ -1019,7 +1020,7 @@
                     }
 
                     $fileLink = "https://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-                    $setWebhook = "https://api.telegram.org/bot".TOKEN."/setWebhook?url=$fileLink?drop_pending_updates=true";
+                    $setWebhook = "https://api.telegram.org/bot".$token."/setWebhook?url=$fileLink?drop_pending_updates=true";
                     $res = file_get_contents($setWebhook);
 
                     $res = json_decode($res, true);
@@ -3079,7 +3080,7 @@ function sendNotification($usersList, $msg, $exception = []){
 function downloadDocument($path, $documentID, $documentName){
 
     //Legge le informazioni del file inviato
-    $url = "https://api.telegram.org/bot".TOKEN."/getFile?file_id=$documentID";
+    $url = "https://api.telegram.org/bot".$token."/getFile?file_id=$documentID";
     $fileInfo = file_get_contents($url);
     $file = json_decode($fileInfo,true);
 
@@ -3091,7 +3092,7 @@ function downloadDocument($path, $documentID, $documentName){
     }
 
     //scarica il file del documento sul server
-    $url = "https://api.telegram.org/file/bot".TOKEN."/$filePath";//link del file sui server telegram
+    $url = "https://api.telegram.org/file/bot".$token."/$filePath";//link del file sui server telegram
     $ext = pathinfo($url, PATHINFO_EXTENSION);//estensione del file
     $documentName = "$documentName.$ext";//nome completo del documento da creare
     //Il documento viene scaricato ogni volta perché potrebbe essere stato rinnovato
