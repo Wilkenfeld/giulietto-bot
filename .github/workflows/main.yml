@@ -1,8 +1,9 @@
 # Controls when the action will run.
+name: ""
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [main, api]
+    branches: [main, dev]
   pull_request:
     branches: [main]
 name: Deploy to server (FTP)
@@ -13,6 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: "actions/checkout@v3"
+      - name: Install dependencies
+      uses: php-actions/composer@v6
+      with:
+        progress: yes
       - name: Deploy files to server
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
