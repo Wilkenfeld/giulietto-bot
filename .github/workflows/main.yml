@@ -1,5 +1,4 @@
 # Controls when the action will run.
-name: ""
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
@@ -15,9 +14,9 @@ jobs:
     steps:
       - uses: "actions/checkout@v3"
       - name: Install dependencies
-      uses: php-actions/composer@v6
-      with:
-        progress: yes
+        uses: php-actions/composer@v6
+        with:
+          progress: yes
       - name: Deploy files to server
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
