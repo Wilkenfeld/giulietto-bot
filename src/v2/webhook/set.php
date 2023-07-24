@@ -1,13 +1,9 @@
 <?php
-    require '../../vendor/autoload.php';
-    require '../config/config.php';
+    require_once '../../../vendor/autoload.php';
+    require_once '../config.php';
 
-    $hook_url     = "https://$_SERVER[HTTP_HOST]/giuliettobot/src/v2/webhook/hook.php";
-
-    if (!isset($log)) {
-        $log = new Log(LOG_FILE_PATH."/bot.log");
-    }
-
+    // $hook_url     = "https://$_SERVER[HTTP_HOST]/giuliettobot/src/v2/webhook/hook.php";
+    $hook_url = "https://28a1-37-160-128-75.ngrok-free.app/v2/webhook/hook.php";
     $token = $config['dev']['token'];
     $username = $config['dev']['username'];
 
